@@ -1,0 +1,31 @@
+{
+  "name": "@naujs/active-record",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/naujs/active-record.git"
+  },
+  "author": "Tan Nguyen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/naujs/active-record/issues"
+  },
+  "homepage": "https://github.com/naujs/active-record#readme",
+  "optionalDependencies": {
+    "@naujs/model": "latest",
+    "@naujs/util": "latest",
+    "@naujs/gulp-tasks": "latest"
+  },
+  "dependencies": {
+    "gulp": "^3.9.0",
+    "lodash": "^4.2.1"
+  }
+}
