@@ -437,7 +437,7 @@ class ActiveRecord extends Model {
     });
   }
 
-  static executeApiHandler(methodName, args, context) {
+  static executeApi(methodName, args, context) {
     let method = this[methodName];
 
     if (!method) {
@@ -467,7 +467,7 @@ class ActiveRecord extends Model {
    * @param  {Function} fn         the funciton to be executed
    * @return {Promise}
    */
-  static before(methodName, fn) {
+  static beforeApi(methodName, fn) {
     this._beforeHooks = this._beforeHooks || {};
     if (!this._beforeHooks[methodName]) {
       this._beforeHooks[methodName] = [];
@@ -476,7 +476,7 @@ class ActiveRecord extends Model {
     this._beforeHooks[methodName].push(fn);
   }
 
-  static clearBeforeHooks() {
+  static clearBeforeApiHooks() {
     this._beforeHooks = {};
   }
 
@@ -486,7 +486,7 @@ class ActiveRecord extends Model {
    * @param  {Function} fn         the funciton to be executed
    * @return {Promise}
    */
-  static after(methodName, fn) {
+  static afterApi(methodName, fn) {
     this._afterHooks = this._afterHooks || {};
     if (!this._afterHooks[methodName]) {
       this._afterHooks[methodName] = [];
@@ -495,7 +495,7 @@ class ActiveRecord extends Model {
     this._afterHooks[methodName].push(fn);
   }
 
-  static clearAfterHooks() {
+  static clearAfterApiHooks() {
     this._afterHooks = {};
   }
 

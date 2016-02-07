@@ -544,8 +544,8 @@ var ActiveRecord = (function (_Model) {
       });
     }
   }, {
-    key: 'executeApiHandler',
-    value: function executeApiHandler(methodName, args, context) {
+    key: 'executeApi',
+    value: function executeApi(methodName, args, context) {
       var _this8 = this;
 
       var method = this[methodName];
@@ -579,8 +579,8 @@ var ActiveRecord = (function (_Model) {
      */
 
   }, {
-    key: 'before',
-    value: function before(methodName, fn) {
+    key: 'beforeApi',
+    value: function beforeApi(methodName, fn) {
       this._beforeHooks = this._beforeHooks || {};
       if (!this._beforeHooks[methodName]) {
         this._beforeHooks[methodName] = [];
@@ -589,8 +589,8 @@ var ActiveRecord = (function (_Model) {
       this._beforeHooks[methodName].push(fn);
     }
   }, {
-    key: 'clearBeforeHooks',
-    value: function clearBeforeHooks() {
+    key: 'clearBeforeApiHooks',
+    value: function clearBeforeApiHooks() {
       this._beforeHooks = {};
     }
 
@@ -602,8 +602,8 @@ var ActiveRecord = (function (_Model) {
      */
 
   }, {
-    key: 'after',
-    value: function after(methodName, fn) {
+    key: 'afterApi',
+    value: function afterApi(methodName, fn) {
       this._afterHooks = this._afterHooks || {};
       if (!this._afterHooks[methodName]) {
         this._afterHooks[methodName] = [];
@@ -612,8 +612,8 @@ var ActiveRecord = (function (_Model) {
       this._afterHooks[methodName].push(fn);
     }
   }, {
-    key: 'clearAfterHooks',
-    value: function clearAfterHooks() {
+    key: 'clearAfterApiHooks',
+    value: function clearAfterApiHooks() {
       this._afterHooks = {};
     }
 
