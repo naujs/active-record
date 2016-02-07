@@ -3,6 +3,20 @@ var Model = require('@naujs/model')
   , util = require('@naujs/util');
 
 // Helper methods
+// Class-level
+function defaultArgsForId(cls) {
+  let args = {};
+  args[cls.getPrimaryKey()] = {
+    'type': cls.getPrimaryKeyType(),
+    'required': true
+  };
+  return args;
+}
+
+function defaultPathForId(cls) {
+  return '/:' + cls.getPrimaryKey();
+}
+
 // Instance-level
 
 function executeOrReturnUndefined(context, method) {
@@ -339,6 +353,71 @@ class ActiveRecord extends Model {
         return onAfterDelete(this, options);
       });
     });
+  }
+
+  // API stuff
+
+  static getApiName() {
+    return this.getPluralName();
+  }
+
+  /**
+   * Gets the user-defined end points and merge them with the default ones
+   * By default there are 5 endpoints for
+   * - find all records (findAll)
+   * - find one record (find)
+   * - create new record (create)
+   * - update existing record (update)
+   * - delete a record (delete)
+   * @return {Object}
+   */
+  static getEndPoints() {
+    let userDefinedEndPoints = this.endPoints || {};
+    return _.extend({}, this.getDefaultEndPoints(), userDefinedEndPoints);
+  }
+
+  /**
+   * A list of default end points
+   * @return {Object}
+   */
+  static getDefaultEndPoints() {
+    return this.defaultEndPoints || {
+      'findAll': {
+        'path': '/',
+        'type': 'GET',
+        'args': {
+          'where': 'object',
+          'include': 'any',
+          'field': ['string'],
+          'order': ['string'],
+          'limit': 'number',
+          'offset': 'number'
+        }
+      },
+
+      'findByPk': {
+        'path': defaultPathForId(this),
+        'type': 'GET',
+        'args': defaultArgsForId(this)
+      },
+
+      'create': {
+        'path': '/',
+        'type': 'POST'
+      },
+
+      'update': {
+        'path': defaultPathForId(this),
+        'type': 'PUT',
+        'args': defaultArgsForId(this)
+      },
+
+      'delete': {
+        'path': defaultPathForId(this),
+        'type': 'DELETE',
+        'args': defaultArgsForId(this)
+      }
+    };
   }
 }
 

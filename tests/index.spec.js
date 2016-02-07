@@ -53,6 +53,55 @@ function extendExpectedOptions(params) {
   return _.extend({}, expectedOptions, params);
 }
 
+const DEFAULT_ENDPOINTS = {
+  'findAll': {
+    'path': '/',
+    'type': 'GET',
+    'args': {
+      'where': 'object',
+      'include': 'any',
+      'field': ['string'],
+      'order': ['string'],
+      'limit': 'number',
+      'offset': 'number'
+    }
+  },
+  'findByPk': {
+    'path': '/:id',
+    'type': 'GET',
+    'args': {
+      'id': {
+        'type': 'number',
+        'required': true
+      }
+    }
+  },
+  'create': {
+    'path': '/',
+    'type': 'POST'
+  },
+  'update': {
+    'path': '/:id',
+    'type': 'PUT',
+    'args': {
+      'id': {
+        'type': 'number',
+        'required': true
+      }
+    }
+  },
+  'delete': {
+    'path': '/:id',
+    'type': 'DELETE',
+    'args': {
+      'id': {
+        'type': 'number',
+        'required': true
+      }
+    }
+  }
+};
+
 describe('ActiveRecord', () => {
   var model, connector;
 
@@ -753,6 +802,34 @@ describe('ActiveRecord', () => {
           }
         }, expectedOptions);
       });
+    });
+  });
+
+  describe('.getDefaultEndPoints', () => {
+    it('should construct default end points using the defined primary key', () => {
+      expect(Dummy.getDefaultEndPoints()).toEqual(DEFAULT_ENDPOINTS);
+    });
+  });
+
+  describe('#getEndPoints', () => {
+    afterEach(() => {
+      delete Dummy.endPoints;
+    });
+
+    it('should merge user-defined end points and default end points', () => {
+      Dummy.endPoints = {
+        'test': {
+          path: 'test',
+          type: 'GET'
+        }
+      };
+
+      expect(Dummy.getEndPoints()).toEqual(_.extend({
+        'test': {
+          path: 'test',
+          type: 'GET'
+        }
+      }, DEFAULT_ENDPOINTS));
     });
   });
 
