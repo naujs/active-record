@@ -269,7 +269,8 @@ describe('ActiveRecord', () => {
             'id': 1
           }
         }, {
-          'random': 'stuff'
+          'random': 'stuff',
+          'primaryKeyValue': 1
         });
       });
     });

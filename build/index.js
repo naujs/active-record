@@ -44,7 +44,7 @@ function buildConnectorOptions(instance, options) {
 
   options.primaryKey = Class.getPrimaryKey();
   options.primaryKeyType = Class.getPrimaryKeyType();
-  options.primaryKeyValue = executeOrReturnUndefined(instance, 'getPrimaryKeyValue');
+  options.primaryKeyValue = executeOrReturnUndefined(instance, 'getPrimaryKeyValue') || options.primaryKeyValue;
   options.properties = _.chain(Class.getProperties()).cloneDeep().toPairs().map(function (pair) {
     var options = pair[1];
     options.type = options.type.toJSON();
@@ -444,7 +444,9 @@ var ActiveRecord = (function (_Model) {
       where[pk] = value;
       return this.findOne({
         where: where
-      }, options);
+      }, _.extend({}, options, {
+        primaryKeyValue: value
+      }));
     }
   }, {
     key: 'deleteAll',
