@@ -382,7 +382,7 @@ class ActiveRecord extends Model {
    */
   static getDefaultEndPoints() {
     return this.defaultEndPoints || {
-      'findAll': {
+      'list': {
         'path': '/',
         'type': 'GET',
         'args': {
@@ -395,7 +395,7 @@ class ActiveRecord extends Model {
         }
       },
 
-      'findByPk': {
+      'find': {
         'path': defaultPathForId(this),
         'type': 'GET',
         'args': defaultArgsForId(this)
@@ -418,6 +418,109 @@ class ActiveRecord extends Model {
         'args': defaultArgsForId(this)
       }
     };
+  }
+
+  static _runHooks(hooks, ignoreError, args, result) {
+    if (!hooks || !hooks.length) {
+      return Promise.resolve(true);
+    }
+
+    let hook = hooks.shift();
+
+    return util.tryPromise(hook.call(this, args, result)).catch((e) => {
+      if (ignoreError) {
+        return false;
+      }
+      return Promise.reject(e);
+    }).then(() => {
+      return this._runHooks(hooks, ignoreError, args, result);
+    });
+  }
+
+  static executeApiHandler(methodName, args, context) {
+    let method = this[methodName];
+
+    if (!method) {
+      let error = new Error(`${methodName} is not found`);
+      error.httpCode = error.code = 500;
+      return Promise.reject(error);
+    }
+
+    let promises = [];
+
+    // Processes before hooks, skips the process when there is a rejection
+    let beforeHooks = (this._beforeHooks || {})[methodName];
+    return this._runHooks(beforeHooks, false, args).then(() => {
+      return util.tryPromise(method.call(this, args, context));
+    }).then((result) => {
+      // Processes after hooks and ignores rejection
+      let afterHooks = (this._afterHooks || {})[methodName];
+      return this._runHooks(afterHooks, true, args, result).then(() => {
+        return result;
+      });
+    });
+  }
+
+  /**
+   * This method is called before the execution of an api handler
+   * @param  {String}   methodName method name
+   * @param  {Function} fn         the funciton to be executed
+   * @return {Promise}
+   */
+  static before(methodName, fn) {
+    this._beforeHooks = this._beforeHooks || {};
+    if (!this._beforeHooks[methodName]) {
+      this._beforeHooks[methodName] = [];
+    }
+
+    this._beforeHooks[methodName].push(fn);
+  }
+
+  static clearBeforeHooks() {
+    this._beforeHooks = {};
+  }
+
+  /**
+   * This method is called after the execution of an api handler
+   * @param  {String}   methodName method name
+   * @param  {Function} fn         the funciton to be executed
+   * @return {Promise}
+   */
+  static after(methodName, fn) {
+    this._afterHooks = this._afterHooks || {};
+    if (!this._afterHooks[methodName]) {
+      this._afterHooks[methodName] = [];
+    }
+
+    this._afterHooks[methodName].push(fn);
+  }
+
+  static clearAfterHooks() {
+    this._afterHooks = {};
+  }
+
+  // Default API handlers
+  static list(args, context) {
+    return this.findAll(args);
+  }
+
+  static find(args, context) {
+    return this.findByPk(args[this.getPrimaryKey()]);
+  }
+
+  static create(args, context) {
+    var instance = new this(args);
+    return instance.save();
+  }
+
+  static update(args, context) {
+    var instance = new this(args);
+    return instance.save();
+  }
+
+  static delete(args, context) {
+    var instance = new this(args);
+    return instance.delete();
   }
 }
 

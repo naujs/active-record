@@ -1,3 +1,5 @@
+/*eslint max-nested-callbacks:0*/
+
 'use strict';
 var ActiveRecord = require('../');
 
@@ -54,7 +56,7 @@ function extendExpectedOptions(params) {
 }
 
 const DEFAULT_ENDPOINTS = {
-  'findAll': {
+  'list': {
     'path': '/',
     'type': 'GET',
     'args': {
@@ -66,7 +68,7 @@ const DEFAULT_ENDPOINTS = {
       'offset': 'number'
     }
   },
-  'findByPk': {
+  'find': {
     'path': '/:id',
     'type': 'GET',
     'args': {
@@ -101,6 +103,14 @@ const DEFAULT_ENDPOINTS = {
     }
   }
 };
+
+const DEFAULT_API_HANDLERS = [
+  'findByPk',
+  'findAll',
+  'create',
+  'update',
+  'delete'
+];
 
 describe('ActiveRecord', () => {
   var model, connector;
@@ -830,6 +840,51 @@ describe('ActiveRecord', () => {
           type: 'GET'
         }
       }, DEFAULT_ENDPOINTS));
+    });
+  });
+
+  describe('.executeApiHandler', () => {
+    beforeEach(() => {
+      DEFAULT_API_HANDLERS.forEach((method) => {
+        spyOn(Dummy, method).and.callFake(function() {
+          return Promise.resolve({});
+        });
+      });
+    });
+
+    afterEach(() => {
+      DEFAULT_API_HANDLERS.forEach((method) => {
+        Dummy[method].calls.reset();
+        Dummy[method].and.callThrough();
+      });
+    });
+
+    it('should call method with correct arguments', () => {
+      return Dummy.executeApiHandler('findAll', {where: {test: 'test'}}).then(() => {
+        expect(Dummy.findAll.calls.count()).toEqual(1);
+        expect(Dummy.findAll).toHaveBeenCalledWith({
+          where: {
+            test: 'test'
+          }
+        }, undefined);
+      });
+    });
+
+    DEFAULT_API_HANDLERS.forEach((method) => {
+      it(`should call #${method} on data mapper`, () => {
+        return Dummy.executeApiHandler(method).then(() => {
+          expect(Dummy[method]).toHaveBeenCalled();
+        });
+      });
+    });
+
+    it('should return error when the method is not found', () => {
+      return Dummy.executeApiHandler('invalid').then(function() {
+        throw 'Should not succeed';
+      }, (error) => {
+        expect(error.code).toEqual(500);
+        expect(error.httpCode).toEqual(500);
+      });
     });
   });
 

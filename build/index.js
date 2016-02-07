@@ -486,7 +486,7 @@ var ActiveRecord = (function (_Model) {
     key: 'getDefaultEndPoints',
     value: function getDefaultEndPoints() {
       return this.defaultEndPoints || {
-        'findAll': {
+        'list': {
           'path': '/',
           'type': 'GET',
           'args': {
@@ -499,7 +499,7 @@ var ActiveRecord = (function (_Model) {
           }
         },
 
-        'findByPk': {
+        'find': {
           'path': defaultPathForId(this),
           'type': 'GET',
           'args': defaultArgsForId(this)
@@ -522,6 +522,130 @@ var ActiveRecord = (function (_Model) {
           'args': defaultArgsForId(this)
         }
       };
+    }
+  }, {
+    key: '_runHooks',
+    value: function _runHooks(hooks, ignoreError, args, result) {
+      var _this7 = this;
+
+      if (!hooks || !hooks.length) {
+        return Promise.resolve(true);
+      }
+
+      var hook = hooks.shift();
+
+      return util.tryPromise(hook.call(this, args, result)).catch(function (e) {
+        if (ignoreError) {
+          return false;
+        }
+        return Promise.reject(e);
+      }).then(function () {
+        return _this7._runHooks(hooks, ignoreError, args, result);
+      });
+    }
+  }, {
+    key: 'executeApiHandler',
+    value: function executeApiHandler(methodName, args, context) {
+      var _this8 = this;
+
+      var method = this[methodName];
+
+      if (!method) {
+        var error = new Error(methodName + ' is not found');
+        error.httpCode = error.code = 500;
+        return Promise.reject(error);
+      }
+
+      var promises = [];
+
+      // Processes before hooks, skips the process when there is a rejection
+      var beforeHooks = (this._beforeHooks || {})[methodName];
+      return this._runHooks(beforeHooks, false, args).then(function () {
+        return util.tryPromise(method.call(_this8, args, context));
+      }).then(function (result) {
+        // Processes after hooks and ignores rejection
+        var afterHooks = (_this8._afterHooks || {})[methodName];
+        return _this8._runHooks(afterHooks, true, args, result).then(function () {
+          return result;
+        });
+      });
+    }
+
+    /**
+     * This method is called before the execution of an api handler
+     * @param  {String}   methodName method name
+     * @param  {Function} fn         the funciton to be executed
+     * @return {Promise}
+     */
+
+  }, {
+    key: 'before',
+    value: function before(methodName, fn) {
+      this._beforeHooks = this._beforeHooks || {};
+      if (!this._beforeHooks[methodName]) {
+        this._beforeHooks[methodName] = [];
+      }
+
+      this._beforeHooks[methodName].push(fn);
+    }
+  }, {
+    key: 'clearBeforeHooks',
+    value: function clearBeforeHooks() {
+      this._beforeHooks = {};
+    }
+
+    /**
+     * This method is called after the execution of an api handler
+     * @param  {String}   methodName method name
+     * @param  {Function} fn         the funciton to be executed
+     * @return {Promise}
+     */
+
+  }, {
+    key: 'after',
+    value: function after(methodName, fn) {
+      this._afterHooks = this._afterHooks || {};
+      if (!this._afterHooks[methodName]) {
+        this._afterHooks[methodName] = [];
+      }
+
+      this._afterHooks[methodName].push(fn);
+    }
+  }, {
+    key: 'clearAfterHooks',
+    value: function clearAfterHooks() {
+      this._afterHooks = {};
+    }
+
+    // Default API handlers
+
+  }, {
+    key: 'list',
+    value: function list(args, context) {
+      return this.findAll(args);
+    }
+  }, {
+    key: 'find',
+    value: function find(args, context) {
+      return this.findByPk(args[this.getPrimaryKey()]);
+    }
+  }, {
+    key: 'create',
+    value: function create(args, context) {
+      var instance = new this(args);
+      return instance.save();
+    }
+  }, {
+    key: 'update',
+    value: function update(args, context) {
+      var instance = new this(args);
+      return instance.save();
+    }
+  }, {
+    key: 'delete',
+    value: function _delete(args, context) {
+      var instance = new this(args);
+      return instance.delete();
     }
   }]);
 
