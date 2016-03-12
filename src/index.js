@@ -40,6 +40,7 @@ function buildConnectorOptions(instance, options) {
   }).fromPairs().value();
   options.modelName = Class.getModelName();
   options.pluralName = Class.getPluralName();
+  options.relations = Class.getRelations();
 
   return options;
 }
@@ -265,6 +266,15 @@ class ActiveRecord extends Model {
         });
       });
     });
+  }
+
+  // Relations
+  static getRelations() {
+    return _.cloneDeep(this.relations) || {};
+  }
+
+  getRelations() {
+    return this.getClass().getRelations();
   }
 
   // API stuff

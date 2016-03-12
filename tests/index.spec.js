@@ -48,7 +48,8 @@ var expectedOptions = {
     }
   },
   'modelName': 'dummy',
-  'pluralName': 'dummies'
+  'pluralName': 'dummies',
+  'relations': {}
 };
 
 function extendExpectedOptions(params) {

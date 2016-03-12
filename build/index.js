@@ -52,6 +52,7 @@ function buildConnectorOptions(instance, options) {
   }).fromPairs().value();
   options.modelName = Class.getModelName();
   options.pluralName = Class.getPluralName();
+  options.relations = Class.getRelations();
 
   return options;
 }
@@ -254,6 +255,14 @@ var ActiveRecord = (function (_Model) {
       });
     }
 
+    // Relations
+
+  }, {
+    key: 'getRelations',
+    value: function getRelations() {
+      return this.getClass().getRelations();
+    }
+
     // API stuff
 
   }], [{
@@ -340,6 +349,11 @@ var ActiveRecord = (function (_Model) {
           });
         });
       });
+    }
+  }, {
+    key: 'getRelations',
+    value: function getRelations() {
+      return _.cloneDeep(this.relations) || {};
     }
   }, {
     key: 'getApiName',
