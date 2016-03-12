@@ -107,12 +107,14 @@ const DEFAULT_ENDPOINTS = {
 const DEFAULT_API_HANDLERS = _.keys(DEFAULT_ENDPOINTS);
 
 describe('ActiveRecord', () => {
-  var model, connector;
+  var model, connector, onAfterFind;
 
   beforeEach(() => {
     connector = new DummyConnector();
     Dummy.connector = connector;
-    spyOn(Dummy.prototype, 'onAfterFind').and.callThrough();
+    onAfterFind = jasmine.createSpy('onAfterFind');
+
+    Dummy.watch('afterFind', onAfterFind);
 
     model = new Dummy({
       firstName: 'Tan',
@@ -122,7 +124,7 @@ describe('ActiveRecord', () => {
   });
 
   afterEach(() => {
-    Dummy.prototype.onAfterFind.calls.reset();
+    Dummy.clearHooks();
   });
 
   describe('#getPersistableAttributes', () => {
@@ -230,13 +232,15 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should call #onAfterFind when found the instance', () => {
+    it('should trigger afterFind hook when found the instance', () => {
+      var data = {
+        id: 1,
+        firstName: 'Tan',
+        lastName: 'Nguyen'
+      };
+
       connector.read.and.callFake(() => {
-        return Promise.resolve([{
-          id: 1,
-          firstName: 'Tan',
-          lastName: 'Nguyen'
-        }]);
+        return Promise.resolve([data]);
       });
 
       var options = {
@@ -244,8 +248,12 @@ describe('ActiveRecord', () => {
       };
 
       return Dummy.findOne({}, options).then(() => {
-        expect(Dummy.prototype.onAfterFind).toHaveBeenCalledWith(options);
-        expect(Dummy.prototype.onAfterFind.calls.count()).toEqual(1);
+        expect(onAfterFind.calls.count()).toEqual(1);
+        var args = onAfterFind.calls.argsFor(0);
+        expect(args.length).toBe(2);
+        expect(args[0] instanceof Dummy).toBe(true);
+        expect(args[0].getAttributes()).toEqual(data);
+        expect(args[1]).toEqual(options);
       });
     });
 
@@ -336,9 +344,20 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should call #onAfterFind on each instance found', () => {
+    it('should trigger afterFind on each instance found', () => {
       connector.read.and.callFake(() => {
-        return Promise.resolve([{}, {}]);
+        return Promise.resolve([
+          {
+            id: 1,
+            firstName: 'Tan',
+            lastName: 'Nguyen'
+          },
+          {
+            id: 2,
+            firstName: 'Tan',
+            lastName: 'Nguyen'
+          }
+        ]);
       });
 
       var options = {
@@ -346,13 +365,21 @@ describe('ActiveRecord', () => {
       };
 
       return Dummy.findAll({}, options).then(() => {
-        expect(Dummy.prototype.onAfterFind.calls.count()).toEqual(2);
+        expect(onAfterFind.calls.count()).toEqual(2);
       });
     });
 
   });
 
   describe('#create', () => {
+    var onBeforeCreate, onAfterCreate;
+    beforeEach(() => {
+      onBeforeCreate = jasmine.createSpy('onBeforeCreate');
+      onAfterCreate = jasmine.createSpy('onAfterCreate');
+      Dummy.watch('beforeCreate', onBeforeCreate);
+      Dummy.watch('afterCreate', onAfterCreate);
+    });
+
     it('should call #create on the connector', () => {
       var instance = new Dummy({
         firstName: 'Tan',
@@ -440,14 +467,12 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should call #onBeforeCreate on the model', () => {
-      var instance = new Dummy();
+    it('should trigger beforeCreate hook', () => {
+      var instance = new Dummy({
+        name: 'Tan Nguyen'
+      });
       connector.create.and.callFake(() => {
         return Promise.resolve(instance);
-      });
-
-      spyOn(instance, 'onBeforeCreate').and.callFake(() => {
-        return Promise.resolve(true);
       });
 
       var options = {
@@ -455,11 +480,14 @@ describe('ActiveRecord', () => {
       };
 
       return instance.create(options).then(() => {
-        expect(instance.onBeforeCreate).toHaveBeenCalledWith(options);
+        expect(onBeforeCreate.calls.count()).toBe(1);
+        var args = onBeforeCreate.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
 
-    it('should not call #onBeforeCreate if validation fails', () => {
+    it('should not trigger beforeCreate hook if validation fails', () => {
       var instance = new Dummy();
       connector.create.and.callFake(() => {
         return Promise.resolve(instance);
@@ -469,40 +497,43 @@ describe('ActiveRecord', () => {
         return Promise.resolve(false);
       });
 
-      spyOn(instance, 'onBeforeCreate').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.create(options).then(() => {
-        expect(instance.onBeforeCreate).not.toHaveBeenCalledWith(options);
+        expect(onBeforeCreate.calls.count()).toBe(0);
       });
     });
 
-    it('should call #onAfterCreate on the model', () => {
+    it('should trigger afterCreate hook', () => {
       var instance = new Dummy();
       connector.create.and.callFake(() => {
         return Promise.resolve(instance);
       });
 
-      spyOn(instance, 'onAfterCreate').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.create(options).then(() => {
-        expect(instance.onAfterCreate).toHaveBeenCalledWith(options);
+        expect(onAfterCreate.calls.count()).toBe(1);
+        var args = onAfterCreate.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
   });
 
   describe('#update', () => {
+    var onBeforeUpdate, onAfterUpdate;
+    beforeEach(() => {
+      onBeforeUpdate = jasmine.createSpy('onBeforeUpdate');
+      onAfterUpdate = jasmine.createSpy('onAfterUpdate');
+      Dummy.watch('beforeUpdate', onBeforeUpdate);
+      Dummy.watch('afterUpdate', onAfterUpdate);
+    });
+
     it('should call #update on the connector', () => {
       var instance = new Dummy({
         id: 1,
@@ -597,7 +628,7 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should call #onBeforeUpdate on the model', () => {
+    it('should trigger beforeUpdate hook', () => {
       var instance = new Dummy({
         id: 1
       });
@@ -606,20 +637,19 @@ describe('ActiveRecord', () => {
         return Promise.resolve(instance);
       });
 
-      spyOn(instance, 'onBeforeUpdate').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.update(options).then(() => {
-        expect(instance.onBeforeUpdate).toHaveBeenCalledWith(options);
+        expect(onBeforeUpdate.calls.count()).toBe(1);
+        var args = onBeforeUpdate.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
 
-    it('should not call #onBeforeUpdate if validation fails', () => {
+    it('should not trigger beforeUpdate hook if validation fails', () => {
       var instance = new Dummy({
         id: 1
       });
@@ -632,20 +662,16 @@ describe('ActiveRecord', () => {
         return Promise.resolve(false);
       });
 
-      spyOn(instance, 'onBeforeUpdate').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.update(options).then(() => {
-        expect(instance.onBeforeUpdate).not.toHaveBeenCalledWith(options);
+        expect(onBeforeUpdate.calls.count()).toBe(0);
       });
     });
 
-    it('should call #onAfterUpdate on the model', () => {
+    it('should trigger afterUpdate hook', () => {
       var instance = new Dummy({
         id: 1
       });
@@ -654,22 +680,21 @@ describe('ActiveRecord', () => {
         return Promise.resolve(instance);
       });
 
-      spyOn(instance, 'onAfterUpdate').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.update(options).then(() => {
-        expect(instance.onAfterUpdate).toHaveBeenCalledWith(options);
+        expect(onAfterUpdate.calls.count()).toBe(1);
+        var args = onAfterUpdate.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
   });
 
   describe('#save', () => {
-    var instance;
+    var instance, onBeforeSave, onAfterSave;
     beforeEach(() => {
       instance = new Dummy({
         firstName: 'Tan',
@@ -684,6 +709,12 @@ describe('ActiveRecord', () => {
       spyOn(instance, 'create').and.callFake(() => {
         return Promise.resolve(instance);
       });
+
+      onBeforeSave = jasmine.createSpy('onBeforeSave');
+      onAfterSave = jasmine.createSpy('onAfterSave');
+
+      Dummy.watch('beforeSave', onBeforeSave);
+      Dummy.watch('afterSave', onAfterSave);
     });
 
     it('should call #update if the model is not new', () => {
@@ -707,9 +738,44 @@ describe('ActiveRecord', () => {
         expect(instance.create).toHaveBeenCalledWith(options);
       });
     });
+
+    it('should trigger beforeSave hook', () => {
+      var options = {
+        'random': 'stuff'
+      };
+
+      return instance.save(options).then(() => {
+        expect(onBeforeSave.calls.count()).toBe(1);
+        var args = onBeforeSave.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
+      });
+    });
+
+    it('should trigger afterSave hook', () => {
+      var options = {
+        'random': 'stuff'
+      };
+
+      return instance.save(options).then(() => {
+        expect(onAfterSave.calls.count()).toBe(1);
+        var args = onAfterSave.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
+      });
+    });
   });
 
   describe('#delete', () => {
+    var onBeforeDelete, onAfterDelete;
+    beforeEach(() => {
+      onBeforeDelete = jasmine.createSpy('onBeforeDelete');
+      onAfterDelete = jasmine.createSpy('onAfterDelete');
+
+      Dummy.watch('beforeDelete', onBeforeDelete);
+      Dummy.watch('afterDelete', onAfterDelete);
+    });
+
     it('should call #delete on the connector', () => {
       var instance = new Dummy({
         id: 1,
@@ -739,7 +805,7 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should call #onBeforeDelete on the model', () => {
+    it('should trigger beforeDelete hook', () => {
       var instance = new Dummy({
         id: 1
       });
@@ -748,20 +814,19 @@ describe('ActiveRecord', () => {
         return Promise.resolve(instance);
       });
 
-      spyOn(instance, 'onBeforeDelete').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.delete(options).then(() => {
-        expect(instance.onBeforeDelete).toHaveBeenCalledWith(options);
+        expect(onBeforeDelete.calls.count()).toBe(1);
+        var args = onBeforeDelete.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
 
-    it('should call #onAfterDelete on the model', () => {
+    it('should trigger afterDelete hook', () => {
       var instance = new Dummy({
         id: 1
       });
@@ -770,16 +835,15 @@ describe('ActiveRecord', () => {
         return Promise.resolve(instance);
       });
 
-      spyOn(instance, 'onAfterDelete').and.callFake(() => {
-        return Promise.resolve(true);
-      });
-
       var options = {
         random: 'stuff'
       };
 
       return instance.delete(options).then(() => {
-        expect(instance.onAfterDelete).toHaveBeenCalledWith(options);
+        expect(onAfterDelete.calls.count()).toBe(1);
+        var args = onAfterDelete.calls.argsFor(0);
+        expect(args[0]).toEqual(instance);
+        expect(args[1]).toEqual(options);
       });
     });
   });

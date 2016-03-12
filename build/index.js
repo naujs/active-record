@@ -56,74 +56,6 @@ function buildConnectorOptions(instance, options) {
   return options;
 }
 
-function onAfterFind(instance, options) {
-  var onAfterFind = instance.onAfterFind(options);
-
-  return util.tryPromise(onAfterFind).then(function () {
-    return instance;
-  });
-}
-
-function onBeforeCreate(instance, options) {
-  var onBeforeCreate = instance.onBeforeCreate(options);
-
-  return util.tryPromise(onBeforeCreate).then(function (result) {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterCreate(instance, options) {
-  var onAfterCreate = instance.onAfterCreate(options);
-
-  return util.tryPromise(onAfterCreate).then(function () {
-    return instance;
-  });
-}
-
-function onBeforeUpdate(instance, options) {
-  var onBeforeUpdate = instance.onBeforeUpdate(options);
-
-  return util.tryPromise(onBeforeUpdate).then(function (result) {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterUpdate(instance, options) {
-  var onAfterUpdate = instance.onAfterUpdate(options);
-
-  return util.tryPromise(onAfterUpdate).then(function () {
-    return instance;
-  });
-}
-
-function onBeforeDelete(instance, options) {
-  var onBeforeDelete = instance.onBeforeDelete(options);
-
-  return util.tryPromise(onBeforeDelete).then(function (result) {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterDelete(instance, options) {
-  var onAfterDelete = instance.onAfterDelete(options);
-
-  return util.tryPromise(onAfterDelete).then(function () {
-    return instance;
-  });
-}
-
 var ActiveRecord = (function (_Model) {
   _inherits(ActiveRecord, _Model);
 
@@ -206,72 +138,6 @@ var ActiveRecord = (function (_Model) {
       return json;
     }
 
-    // Lifecycle hooks
-
-  }, {
-    key: 'onAfterFind',
-    value: function onAfterFind() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return this;
-    }
-  }, {
-    key: 'onBeforeCreate',
-    value: function onBeforeCreate() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return true;
-    }
-  }, {
-    key: 'onAfterCreate',
-    value: function onAfterCreate() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return this;
-    }
-  }, {
-    key: 'onBeforeUpdate',
-    value: function onBeforeUpdate() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return true;
-    }
-  }, {
-    key: 'onAfterUpdate',
-    value: function onAfterUpdate() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return this;
-    }
-  }, {
-    key: 'onBeforeSave',
-    value: function onBeforeSave() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return true;
-    }
-  }, {
-    key: 'onAfterSave',
-    value: function onAfterSave() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return this;
-    }
-  }, {
-    key: 'onBeforeDelete',
-    value: function onBeforeDelete() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return true;
-    }
-  }, {
-    key: 'onAfterDelete',
-    value: function onAfterDelete() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-      return this;
-    }
-
     // Data management methods
 
   }, {
@@ -290,16 +156,15 @@ var ActiveRecord = (function (_Model) {
           return false;
         }
 
-        return onBeforeCreate(_this3, options).then(function (result) {
-          if (!result) {
-            return false;
-          }
-
+        return _this3.runHook('beforeCreate', _this3, options).then(function () {
           var attributes = _this3.getPersistableAttributes();
 
           return _this3.getClass().getConnector().create(attributes, buildConnectorOptions(_this3, options)).then(function (result) {
             _this3.setAttributes(result);
-            return onAfterCreate(_this3, options);
+
+            return _this3.runHook('afterCreate', _this3, options).then(function () {
+              return _this3;
+            });
           });
         });
       });
@@ -320,7 +185,7 @@ var ActiveRecord = (function (_Model) {
           return false;
         }
 
-        return onBeforeUpdate(_this4, options).then(function (result) {
+        return _this4.runHook('beforeUpdate', _this4, options).then(function (result) {
           if (!result) {
             return false;
           }
@@ -333,7 +198,10 @@ var ActiveRecord = (function (_Model) {
 
           return _this4.getClass().getConnector().update(filter, attributes, buildConnectorOptions(_this4, options)).then(function (result) {
             _this4.setAttributes(result);
-            return onAfterUpdate(_this4, options);
+
+            return _this4.runHook('afterUpdate', _this4, options).then(function () {
+              return _this4;
+            });
           });
         });
       });
@@ -341,17 +209,29 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'save',
     value: function save() {
+      var _this5 = this;
+
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
+      var method = 'update';
       if (this.isNew()) {
-        return this.create(options);
+        method = 'create';
       }
-      return this.update(options);
+
+      return this.runHook('beforeSave', this, options).then(function () {
+        return _this5[method].call(_this5, options);
+      }).then(function () {
+        return _this5.runHook('afterSave', _this5, options).then(function () {
+          return _this5;
+        }, function () {
+          return _this5;
+        });
+      });
     }
   }, {
     key: 'delete',
     value: function _delete() {
-      var _this5 = this;
+      var _this6 = this;
 
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -359,19 +239,17 @@ var ActiveRecord = (function (_Model) {
         return Promise.reject('Cannot delete new model');
       }
 
-      return onBeforeDelete(this, options).then(function (result) {
-        if (!result) {
-          return false;
-        }
-
-        var name = _this5.getClass().getModelName();
+      return this.runHook('beforeDelete', this, options).then(function (result) {
+        var name = _this6.getClass().getModelName();
         var filter = {};
         filter.where = {};
-        var primaryKey = _this5.getClass().getPrimaryKey();
-        filter.where[primaryKey] = _this5.getPrimaryKeyValue();
+        var primaryKey = _this6.getClass().getPrimaryKey();
+        filter.where[primaryKey] = _this6.getPrimaryKeyValue();
 
-        return _this5.getClass().getConnector().delete(filter, buildConnectorOptions(_this5, options)).then(function (result) {
-          return onAfterDelete(_this5, options);
+        return _this6.getClass().getConnector().delete(filter, buildConnectorOptions(_this6, options)).then(function (result) {
+          return _this6.runHook('afterDelete', _this6, options).then(function () {
+            return _this6;
+          });
         });
       });
     }
@@ -415,7 +293,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'findAll',
     value: function findAll(filter) {
-      var _this6 = this;
+      var _this7 = this;
 
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -425,8 +303,8 @@ var ActiveRecord = (function (_Model) {
         }
 
         var promises = _.map(results, function (result) {
-          var instance = new _this6(result);
-          return onAfterFind(instance, options).then(function () {
+          var instance = new _this7(result);
+          return _this7.runHook('afterFind', instance, options).then(function () {
             return instance;
           });
         });
@@ -528,7 +406,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: '_runHooks',
     value: function _runHooks(hooks, ignoreError, args, result) {
-      var _this7 = this;
+      var _this8 = this;
 
       if (!hooks || !hooks.length) {
         return Promise.resolve(true);
@@ -542,13 +420,13 @@ var ActiveRecord = (function (_Model) {
         }
         return Promise.reject(e);
       }).then(function () {
-        return _this7._runHooks(hooks, ignoreError, args, result);
+        return _this8._runHooks(hooks, ignoreError, args, result);
       });
     }
   }, {
     key: 'executeApi',
     value: function executeApi(methodName, args, context) {
-      var _this8 = this;
+      var _this9 = this;
 
       var method = this[methodName];
 
@@ -563,11 +441,11 @@ var ActiveRecord = (function (_Model) {
       // Processes before hooks, skips the process when there is a rejection
       var beforeHooks = (this._beforeHooks || {})[methodName];
       return this._runHooks(beforeHooks, false, args).then(function () {
-        return util.tryPromise(method.call(_this8, args, context));
+        return util.tryPromise(method.call(_this9, args, context));
       }).then(function (result) {
         // Processes after hooks and ignores rejection
-        var afterHooks = (_this8._afterHooks || {})[methodName];
-        return _this8._runHooks(afterHooks, true, args, result).then(function () {
+        var afterHooks = (_this9._afterHooks || {})[methodName];
+        return _this9._runHooks(afterHooks, true, args, result).then(function () {
           return result;
         });
       });

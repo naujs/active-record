@@ -44,74 +44,6 @@ function buildConnectorOptions(instance, options) {
   return options;
 }
 
-function onAfterFind(instance, options) {
-  let onAfterFind = instance.onAfterFind(options);
-
-  return util.tryPromise(onAfterFind).then(() => {
-    return instance;
-  });
-}
-
-function onBeforeCreate(instance, options) {
-  let onBeforeCreate = instance.onBeforeCreate(options);
-
-  return util.tryPromise(onBeforeCreate).then((result) => {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterCreate(instance, options) {
-  let onAfterCreate = instance.onAfterCreate(options);
-
-  return util.tryPromise(onAfterCreate).then(() => {
-    return instance;
-  });
-}
-
-function onBeforeUpdate(instance, options) {
-  let onBeforeUpdate = instance.onBeforeUpdate(options);
-
-  return util.tryPromise(onBeforeUpdate).then((result) => {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterUpdate(instance, options) {
-  let onAfterUpdate = instance.onAfterUpdate(options);
-
-  return util.tryPromise(onAfterUpdate).then(() => {
-    return instance;
-  });
-}
-
-function onBeforeDelete(instance, options) {
-  let onBeforeDelete = instance.onBeforeDelete(options);
-
-  return util.tryPromise(onBeforeDelete).then((result) => {
-    if (!result) {
-      return false;
-    }
-
-    return instance;
-  });
-}
-
-function onAfterDelete(instance, options) {
-  let onAfterDelete = instance.onAfterDelete(options);
-
-  return util.tryPromise(onAfterDelete).then(() => {
-    return instance;
-  });
-}
-
 class ActiveRecord extends Model {
   constructor(attributes = {}) {
     super(attributes);
@@ -184,44 +116,6 @@ class ActiveRecord extends Model {
     return json;
   }
 
-  // Lifecycle hooks
-
-  onAfterFind(options = {}) {
-    return this;
-  }
-
-  onBeforeCreate(options = {}) {
-    return true;
-  }
-
-  onAfterCreate(options = {}) {
-    return this;
-  }
-
-  onBeforeUpdate(options = {}) {
-    return true;
-  }
-
-  onAfterUpdate(options = {}) {
-    return this;
-  }
-
-  onBeforeSave(options = {}) {
-    return true;
-  }
-
-  onAfterSave(options = {}) {
-    return this;
-  }
-
-  onBeforeDelete(options = {}) {
-    return true;
-  }
-
-  onAfterDelete(options = {}) {
-    return this;
-  }
-
   // Data management methods
   static getConnector() {
     let connector = this.connector;
@@ -250,7 +144,7 @@ class ActiveRecord extends Model {
 
       let promises = _.map(results, (result) => {
         let instance = new this(result);
-        return onAfterFind(instance, options).then(() => {
+        return this.runHook('afterFind', instance, options).then(() => {
           return instance;
         });
       });
@@ -284,16 +178,15 @@ class ActiveRecord extends Model {
         return false;
       }
 
-      return onBeforeCreate(this, options).then((result) => {
-        if (!result) {
-          return false;
-        }
-
+      return this.runHook('beforeCreate', this, options).then(() => {
         let attributes = this.getPersistableAttributes();
 
         return this.getClass().getConnector().create(attributes, buildConnectorOptions(this, options)).then((result) => {
           this.setAttributes(result);
-          return onAfterCreate(this, options);
+
+          return this.runHook('afterCreate', this, options).then(() => {
+            return this;
+          });
         });
       });
     });
@@ -309,7 +202,7 @@ class ActiveRecord extends Model {
         return false;
       }
 
-      return onBeforeUpdate(this, options).then((result) => {
+      return this.runHook('beforeUpdate', this, options).then((result) => {
         if (!result) {
           return false;
         }
@@ -322,17 +215,30 @@ class ActiveRecord extends Model {
 
         return this.getClass().getConnector().update(filter, attributes, buildConnectorOptions(this, options)).then((result) => {
           this.setAttributes(result);
-          return onAfterUpdate(this, options);
+
+          return this.runHook('afterUpdate', this, options).then(() => {
+            return this;
+          });
         });
       });
     });
   }
 
   save(options = {}) {
+    var method = 'update';
     if (this.isNew()) {
-      return this.create(options);
+      method = 'create';
     }
-    return this.update(options);
+
+    return this.runHook('beforeSave', this, options).then(() => {
+      return this[method].call(this, options);
+    }).then(() => {
+      return this.runHook('afterSave', this, options).then(() => {
+        return this;
+      }, () => {
+        return this;
+      });
+    });
   }
 
   delete(options = {}) {
@@ -340,11 +246,7 @@ class ActiveRecord extends Model {
       return Promise.reject('Cannot delete new model');
     }
 
-    return onBeforeDelete(this, options).then((result) => {
-      if (!result) {
-        return false;
-      }
-
+    return this.runHook('beforeDelete', this, options).then((result) => {
       let name = this.getClass().getModelName();
       let filter = {};
       filter.where = {};
@@ -352,7 +254,9 @@ class ActiveRecord extends Model {
       filter.where[primaryKey] = this.getPrimaryKeyValue();
 
       return this.getClass().getConnector().delete(filter, buildConnectorOptions(this, options)).then((result) => {
-        return onAfterDelete(this, options);
+        return this.runHook('afterDelete', this, options).then(() => {
+          return this;
+        });
       });
     });
   }
