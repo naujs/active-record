@@ -849,6 +849,15 @@ describe('ActiveRecord', () => {
   });
 
   describe('.deleteAll', () => {
+    var onBeforeDelete, onAfterDelete;
+    beforeEach(() => {
+      onBeforeDelete = jasmine.createSpy('onBeforeDelete');
+      onAfterDelete = jasmine.createSpy('onAfterDelete');
+
+      Dummy.watch('beforeDelete', onBeforeDelete);
+      Dummy.watch('afterDelete', onAfterDelete);
+    });
+
     it('should call .deleteAll on the connector', () => {
       connector.delete.and.callFake(() => {
         return Promise.resolve({});
@@ -870,6 +879,52 @@ describe('ActiveRecord', () => {
             test: 1
           }
         }, expectedOptions);
+      });
+    });
+
+    it('should trigger beforeDelete hook', () => {
+      connector.delete.and.callFake(() => {
+        return Promise.resolve({});
+      });
+
+      var options = {
+        random: 'stuff'
+      };
+
+      var filter = {
+        where: {
+          test: 1
+        }
+      };
+
+      return Dummy.deleteAll(filter, options).then(() => {
+        expect(onBeforeDelete.calls.count()).toBe(1);
+        var args = onBeforeDelete.calls.argsFor(0);
+        expect(args[0]).toEqual(filter);
+        expect(args[1]).toEqual(options);
+      });
+    });
+
+    it('should trigger afterDelete hook', () => {
+      connector.delete.and.callFake(() => {
+        return Promise.resolve({});
+      });
+
+      var options = {
+        random: 'stuff'
+      };
+
+      var filter = {
+        where: {
+          test: 1
+        }
+      };
+
+      return Dummy.deleteAll(filter, options).then(() => {
+        expect(onAfterDelete.calls.count()).toBe(1);
+        var args = onAfterDelete.calls.argsFor(0);
+        expect(args[0]).toEqual(filter);
+        expect(args[1]).toEqual(options);
       });
     });
   });

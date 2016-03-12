@@ -165,7 +165,13 @@ class ActiveRecord extends Model {
   }
 
   static deleteAll(filter, options = {}) {
-    return this.getConnector().delete(filter, buildConnectorOptions(this, options));
+    return this.runHook('beforeDelete', filter, options).then(() => {
+      return this.getConnector().delete(filter, buildConnectorOptions(this, options)).then((result) => {
+        return this.runHook('afterDelete', filter, options).then(() => {
+          return result;
+        });
+      });
+    });
   }
 
   create(options = {}) {

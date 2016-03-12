@@ -329,9 +329,17 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'deleteAll',
     value: function deleteAll(filter) {
+      var _this8 = this;
+
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-      return this.getConnector().delete(filter, buildConnectorOptions(this, options));
+      return this.runHook('beforeDelete', filter, options).then(function () {
+        return _this8.getConnector().delete(filter, buildConnectorOptions(_this8, options)).then(function (result) {
+          return _this8.runHook('afterDelete', filter, options).then(function () {
+            return result;
+          });
+        });
+      });
     }
   }, {
     key: 'getApiName',
@@ -406,7 +414,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: '_runHooks',
     value: function _runHooks(hooks, ignoreError, args, result) {
-      var _this8 = this;
+      var _this9 = this;
 
       if (!hooks || !hooks.length) {
         return Promise.resolve(true);
@@ -420,13 +428,13 @@ var ActiveRecord = (function (_Model) {
         }
         return Promise.reject(e);
       }).then(function () {
-        return _this8._runHooks(hooks, ignoreError, args, result);
+        return _this9._runHooks(hooks, ignoreError, args, result);
       });
     }
   }, {
     key: 'executeApi',
     value: function executeApi(methodName, args, context) {
-      var _this9 = this;
+      var _this10 = this;
 
       var method = this[methodName];
 
@@ -441,11 +449,11 @@ var ActiveRecord = (function (_Model) {
       // Processes before hooks, skips the process when there is a rejection
       var beforeHooks = (this._beforeHooks || {})[methodName];
       return this._runHooks(beforeHooks, false, args).then(function () {
-        return util.tryPromise(method.call(_this9, args, context));
+        return util.tryPromise(method.call(_this10, args, context));
       }).then(function (result) {
         // Processes after hooks and ignores rejection
-        var afterHooks = (_this9._afterHooks || {})[methodName];
-        return _this9._runHooks(afterHooks, true, args, result).then(function () {
+        var afterHooks = (_this10._afterHooks || {})[methodName];
+        return _this10._runHooks(afterHooks, true, args, result).then(function () {
           return result;
         });
       });
