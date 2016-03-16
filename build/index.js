@@ -12,7 +12,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var Model = require('@naujs/model'),
     _ = require('lodash'),
-    util = require('@naujs/util');
+    util = require('@naujs/util'),
+    Registry = require('@naujs/registry');
 
 // Helper methods
 // Class-level
@@ -138,9 +139,13 @@ var ActiveRecord = (function (_Model) {
       }
       return json;
     }
-
-    // Data management methods
-
+  }, {
+    key: 'getMeta',
+    value: function getMeta() {
+      var meta = this.getClass().getMeta();
+      meta['primaryKeyValue'] = this.getPrimaryKeyValue();
+      return meta;
+    }
   }, {
     key: 'create',
     value: function create() {
@@ -275,6 +280,49 @@ var ActiveRecord = (function (_Model) {
     value: function getPrimaryKeyType() {
       return this.primaryKeyType || 'number';
     }
+  }, {
+    key: 'getMeta',
+    value: function getMeta() {
+      if (this._meta) {
+        return this._meta;
+      }
+
+      var meta = {};
+
+      meta.primaryKey = this.getPrimaryKey();
+      meta.primaryKeyType = this.getPrimaryKeyType();
+      meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map(function (pair) {
+        var options = pair[1];
+        options.type = options.type.toJSON();
+        return pair;
+      }).fromPairs().value();
+      meta.modelName = this.getModelName();
+      meta.pluralName = this.getPluralName();
+      meta.relations = _.chain(this.getRelations()).toPairs().map(function (pair) {
+        var name = pair[0];
+        var relation = pair[1];
+        var RelatedModel = relation.modelClass;
+        var relatedModelName = relation.model;
+
+        if (!RelatedModel) {
+          RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
+        }
+
+        if (!RelatedModel) {
+          throw relatedModelName + ' is not defined';
+        }
+
+        var meta = RelatedModel.getMeta();
+        return [name, _.extend({}, relation, meta)];
+      }).fromPairs().value();
+
+      this._meta = meta;
+
+      return meta;
+    }
+
+    // Data management methods
+
   }, {
     key: 'getConnector',
     value: function getConnector() {

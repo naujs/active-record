@@ -22,7 +22,8 @@
   "optionalDependencies": {
     "@naujs/model": "latest",
     "@naujs/util": "latest",
-    "@naujs/gulp-tasks": "latest"
+    "@naujs/gulp-tasks": "latest",
+    "@naujs/registry": "latest"
   },
   "dependencies": {
     "gulp": "^3.9.0",

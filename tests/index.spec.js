@@ -4,12 +4,27 @@
 var ActiveRecord = require('../');
 
 var _ = require('lodash');
+var Registry = require('@naujs/registry');
 
 class DummyConnector {}
 DummyConnector.prototype.create = jasmine.createSpy('create');
 DummyConnector.prototype.read = jasmine.createSpy('read');
 DummyConnector.prototype.update = jasmine.createSpy('update');
 DummyConnector.prototype.delete = jasmine.createSpy('delete');
+
+class AnotherDummy extends ActiveRecord {
+
+}
+
+AnotherDummy.properties = {
+  age: {
+    type: ActiveRecord.Types.number
+  }
+};
+
+AnotherDummy.modelName = 'anotherDummy';
+
+Registry.getInstance().set('models.AnotherDummy', AnotherDummy);
 
 class Dummy extends ActiveRecord {
 
@@ -30,6 +45,15 @@ Dummy.properties = {
 
 Dummy.modelName = 'dummy';
 
+Dummy.relations = {
+  'dummies': {
+    'model': 'AnotherDummy',
+    'type': 'hasMany',
+    'foreignKey': 'dummyId',
+    'referenceKey': 'id'
+  }
+};
+
 var expectedOptions = {
   'random': 'stuff',
   'primaryKey': 'id',
@@ -49,7 +73,14 @@ var expectedOptions = {
   },
   'modelName': 'dummy',
   'pluralName': 'dummies',
-  'relations': {}
+  'relations': {
+    'dummies': {
+      'model': 'AnotherDummy',
+      'type': 'hasMany',
+      'foreignKey': 'dummyId',
+      'referenceKey': 'id'
+    }
+  }
 };
 
 function extendExpectedOptions(params) {
@@ -1141,6 +1172,38 @@ describe('ActiveRecord', () => {
         expect(calls).toEqual([2, 0, 1]);
         expect(after0).toHaveBeenCalledWith({test: 'test'}, 3);
         expect(after1).toHaveBeenCalledWith({test: 'test'}, 3);
+      });
+    });
+  });
+
+  describe('.getMeta', () => {
+    it('should return the meta data representing the model', () => {
+      expect(Dummy.getMeta()).toEqual({
+        primaryKey: 'id',
+        primaryKeyType: 'number',
+        properties: {
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
+          name: { type: 'string', persistable: false }
+        },
+        modelName: 'dummy',
+        pluralName: 'dummies',
+        relations: {
+          'dummies': {
+            model: 'AnotherDummy',
+            type: 'hasMany',
+            foreignKey: 'dummyId',
+            referenceKey: 'id',
+            primaryKey: 'id',
+            primaryKeyType: 'number',
+            properties: {
+              age: { type: 'number' }
+            },
+            modelName: 'anotherDummy',
+            pluralName: 'anotherDummies',
+            relations: {}
+          }
+        }
       });
     });
   });

@@ -1,6 +1,7 @@
 var Model = require('@naujs/model')
   , _ = require('lodash')
-  , util = require('@naujs/util');
+  , util = require('@naujs/util')
+  , Registry = require('@naujs/registry');
 
 // Helper methods
 // Class-level
@@ -115,6 +116,51 @@ class ActiveRecord extends Model {
       json[this.getClass().getPrimaryKey()] = pk;
     }
     return json;
+  }
+
+  getMeta() {
+    let meta = this.getClass().getMeta();
+    meta['primaryKeyValue'] = this.getPrimaryKeyValue();
+    return meta;
+  }
+
+  static getMeta() {
+    if (this._meta) {
+      return this._meta;
+    }
+
+    let meta = {};
+
+    meta.primaryKey = this.getPrimaryKey();
+    meta.primaryKeyType = this.getPrimaryKeyType();
+    meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map((pair) => {
+      let options = pair[1];
+      options.type = options.type.toJSON();
+      return pair;
+    }).fromPairs().value();
+    meta.modelName = this.getModelName();
+    meta.pluralName = this.getPluralName();
+    meta.relations = _.chain(this.getRelations()).toPairs().map((pair) => {
+      let name = pair[0];
+      let relation = pair[1];
+      let RelatedModel = relation.modelClass;
+      let relatedModelName = relation.model;
+
+      if (!RelatedModel) {
+        RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
+      }
+
+      if (!RelatedModel) {
+        throw `${relatedModelName} is not defined`;
+      }
+
+      let meta = RelatedModel.getMeta();
+      return [name, _.extend({}, relation, meta)];
+    }).fromPairs().value();
+
+    this._meta = meta;
+
+    return meta;
   }
 
   // Data management methods
