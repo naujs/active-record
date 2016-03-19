@@ -7,10 +7,6 @@ var _ = require('lodash');
 var Registry = require('@naujs/registry');
 
 class DummyConnector {}
-DummyConnector.prototype.create = jasmine.createSpy('create');
-DummyConnector.prototype.read = jasmine.createSpy('read');
-DummyConnector.prototype.update = jasmine.createSpy('update');
-DummyConnector.prototype.delete = jasmine.createSpy('delete');
 
 class AnotherDummy extends ActiveRecord {
 
@@ -54,34 +50,7 @@ Dummy.relations = {
   }
 };
 
-var expectedOptions = {
-  'random': 'stuff',
-  'primaryKey': 'id',
-  'primaryKeyValue': undefined,
-  'primaryKeyType': 'number',
-  'properties': {
-    'firstName': {
-      'type': 'string'
-    },
-    'lastName': {
-      'type': 'string'
-    },
-    'name': {
-      'type': 'string',
-      'persistable': false
-    }
-  },
-  'modelName': 'dummy',
-  'pluralName': 'dummies',
-  'relations': {
-    'dummies': {
-      'model': 'AnotherDummy',
-      'type': 'hasMany',
-      'foreignKey': 'dummyId',
-      'referenceKey': 'id'
-    }
-  }
-};
+var expectedOptions;
 
 function extendExpectedOptions(params) {
   return _.extend({}, expectedOptions, params);
@@ -153,6 +122,44 @@ describe('ActiveRecord', () => {
       lastName: 'Nguyen',
       name: 'Tan Nguyen'
     });
+
+    DummyConnector.prototype.create = jasmine.createSpy('create');
+    DummyConnector.prototype.read = jasmine.createSpy('read');
+    DummyConnector.prototype.update = jasmine.createSpy('update');
+    DummyConnector.prototype.delete = jasmine.createSpy('delete');
+
+    expectedOptions = {
+      'primaryKey': 'id',
+      'primaryKeyType': 'number',
+      'properties': {
+        'firstName': {
+          'type': 'string'
+        },
+        'lastName': {
+          'type': 'string'
+        },
+        'name': {
+          'type': 'string',
+          'persistable': false
+        }
+      },
+      'modelName': 'dummy',
+      'pluralName': 'dummies',
+      'relations': {
+        'dummies': {
+          'model': 'AnotherDummy',
+          'type': 'hasMany',
+          'foreignKey': 'dummyId',
+          'referenceKey': 'id',
+          'primaryKey': 'id',
+          'primaryKeyType': 'number',
+          'properties': { 'age': { 'type': 'number' } },
+          'modelName': 'anotherDummy',
+          'pluralName': 'anotherDummies',
+          'relations': {}
+        }
+      }
+    };
   });
 
   afterEach(() => {
@@ -235,7 +242,7 @@ describe('ActiveRecord', () => {
             a: '1'
           },
           limit: 1
-        }, expectedOptions);
+        }, expectedOptions, options);
       });
     });
 
@@ -338,7 +345,7 @@ describe('ActiveRecord', () => {
       };
 
       return Dummy.findAll(filter, options).then(() => {
-        expect(connector.read).toHaveBeenCalledWith(filter, expectedOptions);
+        expect(connector.read).toHaveBeenCalledWith(filter, expectedOptions, options);
       });
     });
 
@@ -431,7 +438,9 @@ describe('ActiveRecord', () => {
         expect(connector.create).toHaveBeenCalledWith({
           firstName: 'Tan',
           lastName: 'Nguyen'
-        }, expectedOptions);
+        }, extendExpectedOptions({
+          primaryKeyValue: undefined
+        }), options);
       });
     });
 
@@ -473,7 +482,9 @@ describe('ActiveRecord', () => {
         expect(connector.create).toHaveBeenCalledWith({
           firstName: 'Tan',
           lastName: 'Nguyen'
-        }, expectedOptions);
+        }, extendExpectedOptions({
+          primaryKeyValue: undefined
+        }), options);
 
         expect(instance instanceof Dummy).toBe(true);
         expect(instance.id).toEqual(1);
@@ -594,7 +605,7 @@ describe('ActiveRecord', () => {
         }, {
           firstName: 'Tan',
           lastName: 'Nguyen'
-        }, updateOptions);
+        }, updateOptions, options);
       });
     });
 
@@ -833,7 +844,7 @@ describe('ActiveRecord', () => {
           where: {
             id: 1
           }
-        }, deleteOptions);
+        }, deleteOptions, options);
       });
     });
 
@@ -890,7 +901,7 @@ describe('ActiveRecord', () => {
       Dummy.watch('afterDelete', onAfterDelete);
     });
 
-    it('should call .deleteAll on the connector', () => {
+    it('should call #delete on the connector', () => {
       connector.delete.and.callFake(() => {
         return Promise.resolve({});
       });
@@ -910,7 +921,7 @@ describe('ActiveRecord', () => {
           where: {
             test: 1
           }
-        }, expectedOptions);
+        }, expectedOptions, options);
       });
     });
 

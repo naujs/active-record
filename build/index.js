@@ -146,6 +146,14 @@ var ActiveRecord = (function (_Model) {
       meta['primaryKeyValue'] = this.getPrimaryKeyValue();
       return meta;
     }
+
+    // TODO: figure out a better way to support self-reference
+
+  }, {
+    key: 'getConnector',
+    value: function getConnector() {
+      return this.getClass().getConnector();
+    }
   }, {
     key: 'create',
     value: function create() {
@@ -165,7 +173,7 @@ var ActiveRecord = (function (_Model) {
         return _this3.runHook('beforeCreate', _this3, options).then(function () {
           var attributes = _this3.getPersistableAttributes();
 
-          return _this3.getClass().getConnector().create(attributes, buildConnectorOptions(_this3, options)).then(function (result) {
+          return _this3.getConnector().create(attributes, _this3.getMeta(), options).then(function (result) {
             _this3.setAttributes(result);
 
             return _this3.runHook('afterCreate', _this3, options).then(function () {
@@ -202,7 +210,7 @@ var ActiveRecord = (function (_Model) {
           var primaryKey = _this4.getClass().getPrimaryKey();
           filter.where[primaryKey] = _this4.getPrimaryKeyValue();
 
-          return _this4.getClass().getConnector().update(filter, attributes, buildConnectorOptions(_this4, options)).then(function (result) {
+          return _this4.getConnector().update(filter, attributes, _this4.getMeta(), options).then(function (result) {
             _this4.setAttributes(result);
 
             return _this4.runHook('afterUpdate', _this4, options).then(function () {
@@ -252,7 +260,7 @@ var ActiveRecord = (function (_Model) {
         var primaryKey = _this6.getClass().getPrimaryKey();
         filter.where[primaryKey] = _this6.getPrimaryKeyValue();
 
-        return _this6.getClass().getConnector().delete(filter, buildConnectorOptions(_this6, options)).then(function (result) {
+        return _this6.getConnector().delete(filter, _this6.getMeta(), options).then(function (result) {
           return _this6.runHook('afterDelete', _this6, options).then(function () {
             return _this6;
           });
@@ -283,42 +291,41 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'getMeta',
     value: function getMeta() {
-      if (this._meta) {
-        return this._meta;
+      if (!this._meta) {
+        var meta = {};
+
+        meta.primaryKey = this.getPrimaryKey();
+        meta.primaryKeyType = this.getPrimaryKeyType();
+        meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map(function (pair) {
+          var options = pair[1];
+          options.type = options.type.toJSON();
+          return pair;
+        }).fromPairs().value();
+        meta.modelName = this.getModelName();
+        meta.pluralName = this.getPluralName();
+        meta.relations = _.chain(this.getRelations()).toPairs().map(function (pair) {
+          var name = pair[0];
+          var relation = pair[1];
+          var RelatedModel = relation.modelClass;
+          var relatedModelName = relation.model;
+
+          if (!RelatedModel) {
+            RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
+          }
+
+          if (!RelatedModel) {
+            throw relatedModelName + ' is not defined';
+          }
+
+          var meta = RelatedModel.getMeta();
+          return [name, _.extend({}, relation, meta)];
+        }).fromPairs().value();
+
+        this._meta = meta;
       }
 
-      var meta = {};
-
-      meta.primaryKey = this.getPrimaryKey();
-      meta.primaryKeyType = this.getPrimaryKeyType();
-      meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map(function (pair) {
-        var options = pair[1];
-        options.type = options.type.toJSON();
-        return pair;
-      }).fromPairs().value();
-      meta.modelName = this.getModelName();
-      meta.pluralName = this.getPluralName();
-      meta.relations = _.chain(this.getRelations()).toPairs().map(function (pair) {
-        var name = pair[0];
-        var relation = pair[1];
-        var RelatedModel = relation.modelClass;
-        var relatedModelName = relation.model;
-
-        if (!RelatedModel) {
-          RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
-        }
-
-        if (!RelatedModel) {
-          throw relatedModelName + ' is not defined';
-        }
-
-        var meta = RelatedModel.getMeta();
-        return [name, _.extend({}, relation, meta)];
-      }).fromPairs().value();
-
-      this._meta = meta;
-
-      return meta;
+      // TODO: this is heavy!!!
+      return _.cloneDeep(this._meta);
     }
 
     // Data management methods
@@ -354,7 +361,7 @@ var ActiveRecord = (function (_Model) {
 
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-      return this.getConnector().read(filter, buildConnectorOptions(this, options)).then(function (results) {
+      return this.getConnector().read(filter, this.getMeta(), options).then(function (results) {
         if (!_.isArray(results) || !_.size(results)) {
           return [];
         }
@@ -391,7 +398,7 @@ var ActiveRecord = (function (_Model) {
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       return this.runHook('beforeDelete', filter, options).then(function () {
-        return _this8.getConnector().delete(filter, buildConnectorOptions(_this8, options)).then(function (result) {
+        return _this8.getConnector().delete(filter, _this8.getMeta(), options).then(function (result) {
           return _this8.runHook('afterDelete', filter, options).then(function () {
             return result;
           });

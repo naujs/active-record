@@ -124,43 +124,43 @@ class ActiveRecord extends Model {
     return meta;
   }
 
+  // TODO: figure out a better way to support self-reference
   static getMeta() {
-    if (this._meta) {
-      return this._meta;
+    if (!this._meta) {
+      let meta = {};
+
+      meta.primaryKey = this.getPrimaryKey();
+      meta.primaryKeyType = this.getPrimaryKeyType();
+      meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map((pair) => {
+        let options = pair[1];
+        options.type = options.type.toJSON();
+        return pair;
+      }).fromPairs().value();
+      meta.modelName = this.getModelName();
+      meta.pluralName = this.getPluralName();
+      meta.relations = _.chain(this.getRelations()).toPairs().map((pair) => {
+        let name = pair[0];
+        let relation = pair[1];
+        let RelatedModel = relation.modelClass;
+        let relatedModelName = relation.model;
+
+        if (!RelatedModel) {
+          RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
+        }
+
+        if (!RelatedModel) {
+          throw `${relatedModelName} is not defined`;
+        }
+
+        let meta = RelatedModel.getMeta();
+        return [name, _.extend({}, relation, meta)];
+      }).fromPairs().value();
+
+      this._meta = meta;
     }
 
-    let meta = {};
-
-    meta.primaryKey = this.getPrimaryKey();
-    meta.primaryKeyType = this.getPrimaryKeyType();
-    meta.properties = _.chain(this.getProperties()).cloneDeep().toPairs().map((pair) => {
-      let options = pair[1];
-      options.type = options.type.toJSON();
-      return pair;
-    }).fromPairs().value();
-    meta.modelName = this.getModelName();
-    meta.pluralName = this.getPluralName();
-    meta.relations = _.chain(this.getRelations()).toPairs().map((pair) => {
-      let name = pair[0];
-      let relation = pair[1];
-      let RelatedModel = relation.modelClass;
-      let relatedModelName = relation.model;
-
-      if (!RelatedModel) {
-        RelatedModel = Registry.getInstance().get('models.' + relatedModelName);
-      }
-
-      if (!RelatedModel) {
-        throw `${relatedModelName} is not defined`;
-      }
-
-      let meta = RelatedModel.getMeta();
-      return [name, _.extend({}, relation, meta)];
-    }).fromPairs().value();
-
-    this._meta = meta;
-
-    return meta;
+    // TODO: this is heavy!!!
+    return _.cloneDeep(this._meta);
   }
 
   // Data management methods
@@ -170,6 +170,10 @@ class ActiveRecord extends Model {
       throw 'Must have connector';
     }
     return connector;
+  }
+
+  getConnector() {
+    return this.getClass().getConnector();
   }
 
   static findOne(filter = {}, options = {}) {
@@ -184,7 +188,7 @@ class ActiveRecord extends Model {
   }
 
   static findAll(filter, options = {}) {
-    return this.getConnector().read(filter, buildConnectorOptions(this, options)).then((results) => {
+    return this.getConnector().read(filter, this.getMeta(), options).then((results) => {
       if (!_.isArray(results) || !_.size(results)) {
         return [];
       }
@@ -213,7 +217,7 @@ class ActiveRecord extends Model {
 
   static deleteAll(filter, options = {}) {
     return this.runHook('beforeDelete', filter, options).then(() => {
-      return this.getConnector().delete(filter, buildConnectorOptions(this, options)).then((result) => {
+      return this.getConnector().delete(filter, this.getMeta(), options).then((result) => {
         return this.runHook('afterDelete', filter, options).then(() => {
           return result;
         });
@@ -234,7 +238,7 @@ class ActiveRecord extends Model {
       return this.runHook('beforeCreate', this, options).then(() => {
         let attributes = this.getPersistableAttributes();
 
-        return this.getClass().getConnector().create(attributes, buildConnectorOptions(this, options)).then((result) => {
+        return this.getConnector().create(attributes, this.getMeta(), options).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterCreate', this, options).then(() => {
@@ -266,7 +270,7 @@ class ActiveRecord extends Model {
         let primaryKey = this.getClass().getPrimaryKey();
         filter.where[primaryKey] = this.getPrimaryKeyValue();
 
-        return this.getClass().getConnector().update(filter, attributes, buildConnectorOptions(this, options)).then((result) => {
+        return this.getConnector().update(filter, attributes, this.getMeta(), options).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterUpdate', this, options).then(() => {
@@ -306,7 +310,7 @@ class ActiveRecord extends Model {
       let primaryKey = this.getClass().getPrimaryKey();
       filter.where[primaryKey] = this.getPrimaryKeyValue();
 
-      return this.getClass().getConnector().delete(filter, buildConnectorOptions(this, options)).then((result) => {
+      return this.getConnector().delete(filter, this.getMeta(), options).then((result) => {
         return this.runHook('afterDelete', this, options).then(() => {
           return this;
         });
