@@ -153,7 +153,9 @@ class ActiveRecord extends Model {
         }
 
         let meta = RelatedModel.getMeta();
-        return [name, _.extend({}, relation, meta)];
+        relation.meta = meta;
+
+        return [name, relation];
       }).fromPairs().value();
 
       this._meta = meta;

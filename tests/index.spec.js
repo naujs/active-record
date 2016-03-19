@@ -151,12 +151,14 @@ describe('ActiveRecord', () => {
           'type': 'hasMany',
           'foreignKey': 'dummyId',
           'referenceKey': 'id',
-          'primaryKey': 'id',
-          'primaryKeyType': 'number',
-          'properties': { 'age': { 'type': 'number' } },
-          'modelName': 'anotherDummy',
-          'pluralName': 'anotherDummies',
-          'relations': {}
+          'meta': {
+            'primaryKey': 'id',
+            'primaryKeyType': 'number',
+            'properties': { 'age': { 'type': 'number' } },
+            'modelName': 'anotherDummy',
+            'pluralName': 'anotherDummies',
+            'relations': {}
+          }
         }
       }
     };
@@ -1205,14 +1207,16 @@ describe('ActiveRecord', () => {
             type: 'hasMany',
             foreignKey: 'dummyId',
             referenceKey: 'id',
-            primaryKey: 'id',
-            primaryKeyType: 'number',
-            properties: {
-              age: { type: 'number' }
-            },
-            modelName: 'anotherDummy',
-            pluralName: 'anotherDummies',
-            relations: {}
+            meta: {
+              primaryKey: 'id',
+              primaryKeyType: 'number',
+              properties: {
+                age: { type: 'number' }
+              },
+              modelName: 'anotherDummy',
+              pluralName: 'anotherDummies',
+              relations: {}
+            }
           }
         }
       });
