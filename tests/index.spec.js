@@ -1223,4 +1223,10 @@ describe('ActiveRecord', () => {
     });
   });
 
+  describe('.getAllProperties', () => {
+    it('should return all properties including primary key and foreign keys', () => {
+      expect(Dummy.getAllProperties()).toEqual(['firstName', 'lastName', 'name', 'id']);
+    });
+  });
+
 });

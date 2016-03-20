@@ -94,6 +94,19 @@ class ActiveRecord extends Model {
     return !!!this.getPrimaryKeyValue();
   }
 
+  static getAllProperties() {
+    var properties = _.chain(this.getProperties()).clone().keys().value();
+    properties.push(this.getPrimaryKey());
+    var foreignKeys = _.chain(this.getRelations()).map((relation) => {
+      // TODO: use constants here
+      if (relation.type == 'belongsTo') {
+        return relation.foreignKey;
+      }
+      return null;
+    }).compact().value();
+    return _.union(properties, foreignKeys);
+  }
+
   getPersistableAttributes() {
     let properties = this.getClass().getProperties();
     let persistableAttributes = {};

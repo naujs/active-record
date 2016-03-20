@@ -289,6 +289,20 @@ var ActiveRecord = (function (_Model) {
       return this.primaryKeyType || 'number';
     }
   }, {
+    key: 'getAllProperties',
+    value: function getAllProperties() {
+      var properties = _.chain(this.getProperties()).clone().keys().value();
+      properties.push(this.getPrimaryKey());
+      var foreignKeys = _.chain(this.getRelations()).map(function (relation) {
+        // TODO: use constants here
+        if (relation.type == 'belongsTo') {
+          return relation.foreignKey;
+        }
+        return null;
+      }).compact().value();
+      return _.union(properties, foreignKeys);
+    }
+  }, {
     key: 'getMeta',
     value: function getMeta() {
       if (!this._meta) {
