@@ -1,103 +1,96 @@
 'use strict';
 
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 var Registry = require('@naujs/registry'),
     DbCriteria = require('@naujs/db-criteria'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    HasMany = require('./HasMany');
 
-module.exports = function hasManyAndBelongsTo(instance, relation, value) {
-  var TargetModel = Registry.getModel(relation.model);
-  var ThroughModel = Registry.getModel(relation.through);
-  if (!ThroughModel) {
-    console.warn('Related model for the relation is not found');
-    return null;
-  }
-  var _value = value;
+var HasManyAndBelongsTo = (function (_HasMany) {
+  _inherits(HasManyAndBelongsTo, _HasMany);
 
-  function relatedModel() {
-    var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+  function HasManyAndBelongsTo() {
+    _classCallCheck(this, HasManyAndBelongsTo);
 
-    if (_value) {
-      return _value;
-    }
-    return relatedModel.findAll(filter, options);
-  };
-
-  relatedModel.create = function () {};
-
-  function getInstanceReferenceKeyValue() {
-    return instance[relation.referenceKey] || instance.getPrimaryKeyValue();
+    return _possibleConstructorReturn(this, Object.getPrototypeOf(HasManyAndBelongsTo).apply(this, arguments));
   }
 
-  // Basic where condition to find TargetModel of a relation
-  function generateWhereCondition(where) {
-    where = where || {};
-    var referenceKeyValue = getInstanceReferenceKeyValue();
-    where[relation.foreignKey] = referenceKeyValue;
-    return where;
-  }
-
-  function getTargetRelation() {
-    return _.chain(ThroughModel.getRelations()).toPairs().map(function (pair) {
-      if (pair[1].model === relation.model) {
-        return pair[1];
+  _createClass(HasManyAndBelongsTo, [{
+    key: 'getThroughModelClass',
+    value: function getThroughModelClass() {
+      if (!this.ThroughModel) {
+        this.ThroughModel = Registry.getModel(this.getRelation().through);
       }
-      return null;
-    }).compact().first().value();
-  }
+      return this.ThroughModel;
+    }
+  }, {
+    key: '_getTargetRelation',
+    value: function _getTargetRelation() {
+      var _this2 = this;
 
-  relatedModel.findAll = function () {
-    var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      if (!this._targetRelation) {
+        (function () {
+          var compare = _this2.getRelation().model;
+          _this2._targetRelation = _.chain(_this2.getThroughModelClass().getRelations()).toPairs().map(function (pair) {
+            if (pair[1].model === compare) {
+              return pair[1];
+            }
+            return null;
+          }).compact().first().value();
+        })();
+      }
+      return this._targetRelation;
+    }
+  }, {
+    key: 'find',
+    value: function find() {
+      var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-    filter.where = filter.where || {};
+      var TargetModel = this.getTargetModelClass();
+      filter.where = filter.where || {};
 
-    var criteria = new DbCriteria(ThroughModel, {}, options);
-    var where = generateWhereCondition(where);
-    criteria.where(where);
+      var criteria = new DbCriteria(this.getThroughModelClass(), {});
+      var where = this._generateWhereCondition(where);
+      criteria.where(where);
 
-    var targetRelation = getTargetRelation();
-    filter.where[targetRelation.referenceKey || TargetModel.getPrimaryKey()] = {
-      in: criteria
-    };
+      var targetRelation = this._getTargetRelation();
+      filter.where[targetRelation.referenceKey || TargetModel.getPrimaryKey()] = {
+        in: criteria
+      };
 
-    return TargetModel.findAll(filter, options);
-  };
+      return TargetModel.findAll(filter);
+    }
+  }, {
+    key: 'delete',
+    value: function _delete() {
+      var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-  relatedModel.findOne = function () {
-    var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var TargetModel = this.getTargetModelClass();
 
-    filter.limit = 1;
-    return this.findAll(filter).then(function (results) {
-      return results[0] || null;
-    });
-  };
+      var criteria = new DbCriteria(TargetModel, filter);
+      var targetRelation = this._getTargetRelation();
+      criteria.fields(targetRelation.referenceKey || TargetModel.getPrimaryKey());
 
-  relatedModel.delete = function () {
-    var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var mainWhere = {};
+      mainWhere[targetRelation.foreignKey] = {
+        in: criteria
+      };
+      mainWhere[this.getRelation().foreignKey] = this._getReferenceKeyValue();
 
-    var criteria = new DbCriteria(TargetModel, filter, options);
-    var targetRelation = getTargetRelation();
-    criteria.fields(targetRelation.referenceKey || TargetModel.getPrimaryKey());
+      return this.getThroughModelClass().deleteAll({
+        where: mainWhere
+      });
+    }
+  }]);
 
-    var mainWhere = {};
-    mainWhere[targetRelation.foreignKey] = {
-      in: criteria
-    };
-    mainWhere[relation.foreignKey] = getInstanceReferenceKeyValue();
+  return HasManyAndBelongsTo;
+})(HasMany);
 
-    return ThroughModel.deleteAll({
-      where: mainWhere
-    }, options);
-  };
-
-  relatedModel.update = function () {
-    var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-    var attributes = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-    var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
-  };
-
-  return relatedModel;
-};
+module.exports = HasManyAndBelongsTo;

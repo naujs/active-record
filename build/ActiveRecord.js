@@ -18,7 +18,8 @@ var Model = require('@naujs/model'),
 
 var relationFunctions = {};
 _.each(['belongsTo', 'hasOne', 'hasMany', 'hasManyAndBelongsTo'], function (name) {
-  relationFunctions[name] = require('./relations/' + name);
+  var capitalized = name.charAt(0).toUpperCase() + name.substr(1);
+  relationFunctions[name] = require('./relations/' + capitalized);
 });
 
 // Helper methods
@@ -130,8 +131,8 @@ var ActiveRecord = (function (_Model) {
 
       var relations = this.getClass().getRelations();
       _.each(relations, function (relation, name) {
-        var relationFunction = relationFunctions[relation.type];
-        _this3[name] = relationFunction(_this3, relation, attributes[name]);
+        var RelationFunction = relationFunctions[relation.type];
+        _this3[name] = new RelationFunction(_this3, relation, attributes[name]).asFunction();
       });
       return this;
     }

@@ -1,9 +1,13 @@
 'use strict';
 
-var relationFunction = require('../../../build/relations/hasMany')
+var HasMany = require('../../../build/relations/HasMany')
   , Promise = require('@naujs/util').getPromise();
 
-describe('hasMany', () => {
+function relationFunction(instance, relation, value) {
+  return new HasMany(instance, relation, value).asFunction();
+}
+
+describe('HasMany', () => {
   var instance, connector;
 
   beforeEach(() => {

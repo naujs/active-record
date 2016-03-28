@@ -1,89 +1,65 @@
+'use strict';
+
 var Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria')
-  , _ = require('lodash');
+  , _ = require('lodash')
+  , HasMany = require('./HasMany');
 
-module.exports = function hasManyAndBelongsTo(instance, relation, value) {
-  var TargetModel = Registry.getModel(relation.model);
-  var ThroughModel = Registry.getModel(relation.through);
-  if (!ThroughModel) {
-    console.warn(`Related model for the relation is not found`);
-    return null;
-  }
-  var _value = value;
-
-  function relatedModel(filter = {}, options = {}) {
-    if (_value) {
-      return _value;
+class HasManyAndBelongsTo extends HasMany {
+  getThroughModelClass() {
+    if (!this.ThroughModel) {
+      this.ThroughModel = Registry.getModel(this.getRelation().through);
     }
-    return relatedModel.findAll(filter, options);
-  };
-
-  relatedModel.create = function() {
-
-  };
-
-  function getInstanceReferenceKeyValue() {
-    return instance[relation.referenceKey] || instance.getPrimaryKeyValue();
+    return this.ThroughModel;
   }
 
-  // Basic where condition to find TargetModel of a relation
-  function generateWhereCondition(where) {
-    where = where || {};
-    let referenceKeyValue = getInstanceReferenceKeyValue();
-    where[relation.foreignKey] = referenceKeyValue;
-    return where;
+  _getTargetRelation() {
+    if (!this._targetRelation) {
+      let compare = this.getRelation().model;
+      this._targetRelation = _.chain(this.getThroughModelClass().getRelations())
+      .toPairs().map((pair) => {
+        if (pair[1].model === compare) {
+          return pair[1];
+        }
+        return null;
+      }).compact().first().value();
+    }
+    return this._targetRelation;
   }
 
-  function getTargetRelation() {
-    return _.chain(ThroughModel.getRelations()).toPairs().map((pair) => {
-      if (pair[1].model === relation.model) {
-        return pair[1];
-      }
-      return null;
-    }).compact().first().value();
-  }
-
-  relatedModel.findAll = function(filter = {}, options = {}) {
+  find(filter = {}) {
+    let TargetModel = this.getTargetModelClass();
     filter.where = filter.where || {};
 
-    let criteria = new DbCriteria(ThroughModel, {}, options);
-    let where = generateWhereCondition(where);
+    let criteria = new DbCriteria(this.getThroughModelClass(), {});
+    let where = this._generateWhereCondition(where);
     criteria.where(where);
 
-    let targetRelation = getTargetRelation();
+    let targetRelation = this._getTargetRelation();
     filter.where[targetRelation.referenceKey || TargetModel.getPrimaryKey()] = {
       in: criteria
     };
 
-    return TargetModel.findAll(filter, options);
-  };
+    return TargetModel.findAll(filter);
+  }
 
-  relatedModel.findOne = function(filter = {}, options = {}) {
-    filter.limit = 1;
-    return this.findAll(filter).then((results) => {
-      return results[0] || null;
-    });
-  };
+  delete(filter = {}) {
+    let TargetModel = this.getTargetModelClass();
 
-  relatedModel.delete = function(filter = {}, options = {}) {
-    let criteria = new DbCriteria(TargetModel, filter, options);
-    let targetRelation = getTargetRelation();
+    let criteria = new DbCriteria(TargetModel, filter);
+    let targetRelation = this._getTargetRelation();
     criteria.fields(targetRelation.referenceKey || TargetModel.getPrimaryKey());
 
     let mainWhere = {};
     mainWhere[targetRelation.foreignKey] = {
       in: criteria
     };
-    mainWhere[relation.foreignKey] = getInstanceReferenceKeyValue();
+    mainWhere[this.getRelation().foreignKey] = this._getReferenceKeyValue();
 
-    return ThroughModel.deleteAll({
+    return this.getThroughModelClass().deleteAll({
       where: mainWhere
-    }, options);
-  };
+    });
+  }
+}
 
-  relatedModel.update = function(filter = {}, attributes = {}, options = {}) {
-
-  };
-
-  return relatedModel;
-};
+module.exports = HasManyAndBelongsTo;

@@ -1,9 +1,13 @@
 'use strict';
 
-var relationFunction = require('../../../build/relations/belongsTo')
+var BelongsTo = require('../../../build/relations/BelongsTo')
   , Promise = require('@naujs/util').getPromise();
 
-describe('belongsTo', () => {
+function relationFunction(instance, relation, value) {
+  return new BelongsTo(instance, relation, value).asFunction();
+}
+
+describe('BelongsTo', () => {
   var instance, connector;
 
   beforeEach(() => {
@@ -31,6 +35,7 @@ describe('belongsTo', () => {
     });
 
     var relation = relationFunction(instance, Store.getRelations()['owner']);
+
     return relation().then((owner) => {
       expect(User.findOne.calls.count()).toBe(1);
       var filter = User.findOne.calls.argsFor(0)[0];

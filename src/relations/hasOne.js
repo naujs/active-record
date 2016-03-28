@@ -1,52 +1,20 @@
 var Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria')
-  , _ = require('lodash');
+  , _ = require('lodash')
+  , HasMany = require('./HasMany');
 
-module.exports = function hasOne(instance, relation, value) {
-  var TargetModel = Registry.getModel(relation.model);
-  var _value = value;
-
-  function relatedModel() {
-    if (_value) {
-      return _value;
-    }
-
-    return relatedModel.find();
-  };
-
-  relatedModel.create = function() {
-
-  };
-
-  function getInstanceReferenceKeyValue() {
-    return instance[relation.referenceKey] || instance.getPrimaryKeyValue();
+class HasOne extends HasMany {
+  find() {
+    return this.getTargetModelClass().findOne({
+      where: this._generateWhereCondition()
+    });
   }
 
-  // Basic where condition to find TargetModel of a relation
-  function generateWhereCondition(where) {
-    where = where || {};
-    let referenceKeyValue = getInstanceReferenceKeyValue();
-    where[relation.foreignKey] = referenceKeyValue;
-    return where;
+  delete() {
+    return this.getTargetModelClass().deleteOne({
+      where: this._generateWhereCondition()
+    });
   }
+}
 
-  relatedModel.find = function() {
-    let where = generateWhereCondition();
-    return TargetModel.findOne({
-      where: where
-    });
-  };
-
-  relatedModel.delete = function() {
-    let where = generateWhereCondition();
-    return TargetModel.deleteOne({
-      where: where
-    });
-  };
-
-  relatedModel.update = function(filter = {}, attributes = {}, options = {}) {
-
-  };
-
-  return relatedModel;
-};
+module.exports = HasOne;
