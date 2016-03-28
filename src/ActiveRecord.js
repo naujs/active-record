@@ -31,8 +31,8 @@ function defaultPathForId(cls) {
 }
 
 class ActiveRecord extends Model {
-  constructor(attributes = {}) {
-    super(attributes);
+  constructor(attributes = {}, options = {}) {
+    super(attributes, options);
 
     // set primary key if available
     let pk = this.getClass().getPrimaryKey();
@@ -62,7 +62,10 @@ class ActiveRecord extends Model {
         }
       });
     });
-    this.setRelationAttributes(attributes);
+
+    this.setRelationAttributes(attributes, {
+      preset: options.presetRelations
+    });
   }
 
   static getPrimaryKey() {
@@ -84,12 +87,14 @@ class ActiveRecord extends Model {
     return this;
   }
 
-  setAttributes(attributes = {}) {
-    super.setAttributes(attributes);
+  setAttributes(attributes = {}, options = {}) {
+    super.setAttributes(attributes, options);
     let pk = this.getClass().getPrimaryKey();
     this.setPrimaryKeyValue(attributes[pk]);
     this.setForeignAttributes(attributes);
-    this.setRelationAttributes(attributes);
+    this.setRelationAttributes(attributes, {
+      preset: options.presetRelations
+    });
     return this;
   }
 
@@ -105,11 +110,28 @@ class ActiveRecord extends Model {
     return this;
   }
 
-  setRelationAttributes(attributes = {}) {
+  setRelationAttributes(attributes = {}, options = {}) {
     var relations = this.getClass().getRelations();
     _.each(relations, (relation, name) => {
-      var RelationFunction = relationFunctions[relation.type];
-      this[name] = new RelationFunction(this, relation, attributes[name]).asFunction();
+      if (options.preset === false) {
+        if (attributes[name]) {
+          this[name] = attributes[name];
+        } else {
+          switch (relation.type) {
+            case 'hasMany':
+            case 'hasManyAndBelongsTo':
+              this[name] = [];
+              break;
+            case 'belongsTo':
+            case 'hasOne':
+              this[name] = null;
+              break;
+          }
+        }
+      } else {
+        var RelationFunction = relationFunctions[relation.type];
+        this[name] = new RelationFunction(this, relation, attributes[name]).asFunction();
+      }
     });
     return this;
   }
@@ -353,7 +375,7 @@ class ActiveRecord extends Model {
 
   // Relations
   static getRelations() {
-    return _.cloneDeep(this.relations) || {};
+    return _.clone(this.relations) || {};
   }
 
   getRelations() {

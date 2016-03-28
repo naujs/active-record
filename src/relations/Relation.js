@@ -25,9 +25,29 @@ class Relation {
     return this.TargetModelClass;
   }
 
+  _createInstanceFromTargetModel(value) {
+    var TargetModel = this.getTargetModelClass();
+    if (value instanceof TargetModel) {
+      return value;
+    }
+    return new TargetModel(value, {presetRelations: false});
+  }
+
   setValue(value) {
-    if (!value) this._value = null;
-    this._value = value;
+    if (!value) {
+      this._value = null;
+      return this;
+    }
+    var TargetModel = this.getTargetModelClass();
+
+    if (_.isArray(value)) {
+      this._value = _.map(value, (v) => {
+        return this._createInstanceFromTargetModel(v);
+      });
+    } else {
+      this._value = this._createInstanceFromTargetModel(value);
+    }
+    return this;
   }
 
   getValue() {

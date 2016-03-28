@@ -27,8 +27,20 @@ describe('HasManyAndBelongsTo', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['tags'], 1);
-    expect(relation()).toEqual(1);
+    var relation = relationFunction(instance, Store.getRelations()['tags'], [
+      {
+        name: 'Tag1',
+        id: 1
+      },
+      {
+        name: 'Tag2',
+        id: 2
+      }
+    ]);
+    var values = relation();
+    expect(values.length).toEqual(2);
+    expect(values[0] instanceof Tag).toBe(true);
+    expect(values[1] instanceof Tag).toBe(true);
   });
 
   it('should return function to find hasManyAndBelongsTo relation', () => {

@@ -42,12 +42,13 @@ var ActiveRecord = (function (_Model) {
 
   function ActiveRecord() {
     var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
     _classCallCheck(this, ActiveRecord);
 
     // set primary key if available
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ActiveRecord).call(this, attributes));
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ActiveRecord).call(this, attributes, options));
 
     var pk = _this.getClass().getPrimaryKey();
     ActiveRecord.defineProperty(_this, pk);
@@ -76,7 +77,10 @@ var ActiveRecord = (function (_Model) {
         }
       });
     });
-    _this.setRelationAttributes(attributes);
+
+    _this.setRelationAttributes(attributes, {
+      preset: options.presetRelations
+    });
     return _this;
   }
 
@@ -97,12 +101,15 @@ var ActiveRecord = (function (_Model) {
     key: 'setAttributes',
     value: function setAttributes() {
       var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
-      _get(Object.getPrototypeOf(ActiveRecord.prototype), 'setAttributes', this).call(this, attributes);
+      _get(Object.getPrototypeOf(ActiveRecord.prototype), 'setAttributes', this).call(this, attributes, options);
       var pk = this.getClass().getPrimaryKey();
       this.setPrimaryKeyValue(attributes[pk]);
       this.setForeignAttributes(attributes);
-      this.setRelationAttributes(attributes);
+      this.setRelationAttributes(attributes, {
+        preset: options.presetRelations
+      });
       return this;
     }
   }, {
@@ -128,11 +135,29 @@ var ActiveRecord = (function (_Model) {
       var _this3 = this;
 
       var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       var relations = this.getClass().getRelations();
       _.each(relations, function (relation, name) {
-        var RelationFunction = relationFunctions[relation.type];
-        _this3[name] = new RelationFunction(_this3, relation, attributes[name]).asFunction();
+        if (options.preset === false) {
+          if (attributes[name]) {
+            _this3[name] = attributes[name];
+          } else {
+            switch (relation.type) {
+              case 'hasMany':
+              case 'hasManyAndBelongsTo':
+                _this3[name] = [];
+                break;
+              case 'belongsTo':
+              case 'hasOne':
+                _this3[name] = null;
+                break;
+            }
+          }
+        } else {
+          var RelationFunction = relationFunctions[relation.type];
+          _this3[name] = new RelationFunction(_this3, relation, attributes[name]).asFunction();
+        }
       });
       return this;
     }
@@ -449,7 +474,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'getRelations',
     value: function getRelations() {
-      return _.cloneDeep(this.relations) || {};
+      return _.clone(this.relations) || {};
     }
   }, {
     key: 'getApiName',

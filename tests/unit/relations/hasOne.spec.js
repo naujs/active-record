@@ -27,8 +27,12 @@ describe('HasOne', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['alias'], 1);
-    expect(relation()).toEqual(1);
+    var relation = relationFunction(instance, Store.getRelations()['alias'], {
+      name: 'store-1',
+      id: 1,
+      store_id: 1
+    });
+    expect(relation() instanceof Alias).toBe(true);
   });
 
   it('should return function to find hasMany relation', () => {

@@ -36,10 +36,33 @@ var Relation = (function () {
       return this.TargetModelClass;
     }
   }, {
+    key: '_createInstanceFromTargetModel',
+    value: function _createInstanceFromTargetModel(value) {
+      var TargetModel = this.getTargetModelClass();
+      if (value instanceof TargetModel) {
+        return value;
+      }
+      return new TargetModel(value, { presetRelations: false });
+    }
+  }, {
     key: 'setValue',
     value: function setValue(value) {
-      if (!value) this._value = null;
-      this._value = value;
+      var _this = this;
+
+      if (!value) {
+        this._value = null;
+        return this;
+      }
+      var TargetModel = this.getTargetModelClass();
+
+      if (_.isArray(value)) {
+        this._value = _.map(value, function (v) {
+          return _this._createInstanceFromTargetModel(v);
+        });
+      } else {
+        this._value = this._createInstanceFromTargetModel(value);
+      }
+      return this;
     }
   }, {
     key: 'getValue',
@@ -54,7 +77,7 @@ var Relation = (function () {
   }, {
     key: 'asFunction',
     value: function asFunction() {
-      var _this = this;
+      var _this2 = this;
 
       function relatedModel() {
         var value = this.getValue();
@@ -70,7 +93,7 @@ var Relation = (function () {
       var bound = relatedModel.bind(this);
 
       _.each(this.methods(), function (name) {
-        bound[name] = _this[name].bind(_this);
+        bound[name] = _this2[name].bind(_this2);
       });
 
       return bound;

@@ -25,8 +25,8 @@ describe('BelongsTo', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['owner'], 1);
-    expect(relation()).toEqual(1);
+    var relation = relationFunction(instance, Store.getRelations()['owner'], {});
+    expect(relation() instanceof User).toBe(true);
   });
 
   it('should return function to find the related model', () => {
@@ -61,7 +61,7 @@ describe('BelongsTo', () => {
         return Promise.resolve({});
       });
 
-      var relation = relationFunction(instance, Store.getRelations()['owner'], 1);
+      var relation = relationFunction(instance, Store.getRelations()['owner']);
       return relation.delete({
         where: {
           name: 'User 2'
