@@ -42,7 +42,7 @@ var Relation = (function () {
       if (value instanceof TargetModel) {
         return value;
       }
-      return new TargetModel(value, { presetRelations: false });
+      return new TargetModel(value);
     }
   }, {
     key: 'setValue',

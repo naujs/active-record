@@ -30,7 +30,7 @@ class Relation {
     if (value instanceof TargetModel) {
       return value;
     }
-    return new TargetModel(value, {presetRelations: false});
+    return new TargetModel(value);
   }
 
   setValue(value) {

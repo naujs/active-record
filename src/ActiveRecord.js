@@ -31,8 +31,8 @@ function defaultPathForId(cls) {
 }
 
 class ActiveRecord extends Model {
-  constructor(attributes = {}, options = {}) {
-    super(attributes, options);
+  constructor(attributes = {}) {
+    super(attributes);
 
     // set primary key if available
     let pk = this.getClass().getPrimaryKey();
@@ -62,10 +62,7 @@ class ActiveRecord extends Model {
         }
       });
     });
-
-    this.setRelationAttributes(attributes, {
-      preset: options.presetRelations
-    });
+    this.setRelationAttributes(attributes);
   }
 
   static getPrimaryKey() {
@@ -87,14 +84,12 @@ class ActiveRecord extends Model {
     return this;
   }
 
-  setAttributes(attributes = {}, options = {}) {
-    super.setAttributes(attributes, options);
+  setAttributes(attributes = {}) {
+    super.setAttributes(attributes);
     let pk = this.getClass().getPrimaryKey();
     this.setPrimaryKeyValue(attributes[pk]);
     this.setForeignAttributes(attributes);
-    this.setRelationAttributes(attributes, {
-      preset: options.presetRelations
-    });
+    this.setRelationAttributes(attributes);
     return this;
   }
 
@@ -110,28 +105,11 @@ class ActiveRecord extends Model {
     return this;
   }
 
-  setRelationAttributes(attributes = {}, options = {}) {
+  setRelationAttributes(attributes = {}) {
     var relations = this.getClass().getRelations();
     _.each(relations, (relation, name) => {
-      if (options.preset === false) {
-        if (attributes[name]) {
-          this[name] = attributes[name];
-        } else {
-          switch (relation.type) {
-            case 'hasMany':
-            case 'hasManyAndBelongsTo':
-              this[name] = [];
-              break;
-            case 'belongsTo':
-            case 'hasOne':
-              this[name] = null;
-              break;
-          }
-        }
-      } else {
-        var RelationFunction = relationFunctions[relation.type];
-        this[name] = new RelationFunction(this, relation, attributes[name]).asFunction();
-      }
+      var RelationFunction = relationFunctions[relation.type];
+      this[name] = new RelationFunction(this, relation, attributes[name]).asFunction();
     });
     return this;
   }

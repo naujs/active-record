@@ -2,9 +2,10 @@
 //   , ActiveRecord = require('../../')
 //   , Registry = require('@naujs/registry');
 //
-// describe('PsqlConnector', () => {
+// fdescribe('PsqlConnector', () => {
+//   var connector;
 //   beforeEach(() => {
-//     var connector = PsqlConnector.getInstance(getPsqlTestDbOptions());
+//     connector = PsqlConnector.getInstance(getPsqlTestDbOptions());
 //     Registry.getInstance().set('ActiveRecord.connector', connector);
 //
 //     return setupPsqlDatabase(connector.getConnection());

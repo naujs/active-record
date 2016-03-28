@@ -38,7 +38,14 @@ global.testDataAccessMethods = function() {
       }).then((stores) => {
         expect(stores.length).toEqual(3);
         var store = stores[0];
-        console.log(store);
+
+        console.log(store.products());
+
+        expect(store.toJSON()).toEqual({
+          name: 'Store 1',
+          id: 1,
+          user_id: 1
+        });
       });
     });
   });
