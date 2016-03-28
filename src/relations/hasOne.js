@@ -2,16 +2,16 @@ var Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria')
   , _ = require('lodash');
 
-module.exports = function hasMany(instance, relation, value) {
+module.exports = function hasOne(instance, relation, value) {
   var TargetModel = Registry.getModel(relation.model);
   var _value = value;
 
-  function relatedModel(filter = {}, options = {}) {
+  function relatedModel() {
     if (_value) {
       return _value;
     }
 
-    return relatedModel.find(filter, options);
+    return relatedModel.find();
   };
 
   relatedModel.create = function() {
