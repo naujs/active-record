@@ -884,6 +884,14 @@ describe('ActiveRecord', () => {
     });
   });
 
+  describe('Relation', () => {
+    it('should define functions for interacting with relations', () => {
+      _.each(Store.getRelations(), (relation, name) => {
+        expect(typeof model[name]).toEqual('function');
+      });
+    });
+  });
+
   // describe('.getDefaultEndPoints', () => {
   //   it('should construct default end points using the defined primary key', () => {
   //     expect(Dummy.getDefaultEndPoints()).toEqual(DEFAULT_ENDPOINTS);

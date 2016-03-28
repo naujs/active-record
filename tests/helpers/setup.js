@@ -1,2 +1,2 @@
-require('@naujs/common-test').setupDatabase();
+require('@naujs/common-test').setupPsql();
 require('@naujs/common-test').setupModel();

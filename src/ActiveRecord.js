@@ -4,6 +4,16 @@ var Model = require('@naujs/model')
   , Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria');
 
+var relationFunctions = {};
+_.each([
+  'belongsTo',
+  'hasOne',
+  'hasMany',
+  'hasManyAndBelongsTo'
+], (name) => {
+  relationFunctions[name] = require(`./relations/${name}`);
+});
+
 // Helper methods
 // Class-level
 function defaultArgsForId(cls) {
@@ -19,47 +29,39 @@ function defaultPathForId(cls) {
   return '/:' + cls.getPrimaryKey();
 }
 
-// Instance-level
-
-function executeOrReturnUndefined(context, method) {
-  if (_.isFunction(context[method])) {
-    return context[method]();
-  }
-}
-
-function buildConnectorOptions(instance, options) {
-  options = _.cloneDeep(options);
-
-  let Class = _.isFunction(instance.getClass) ? instance.getClass() : instance;
-
-  options.primaryKey = Class.getPrimaryKey();
-  options.primaryKeyType = Class.getPrimaryKeyType();
-  options.primaryKeyValue = executeOrReturnUndefined(instance, 'getPrimaryKeyValue') || options.primaryKeyValue;
-  options.properties = _.chain(Class.getProperties()).cloneDeep().toPairs().map((pair) => {
-    let options = pair[1];
-    options.type = options.type.toJSON();
-    return pair;
-  }).fromPairs().value();
-  options.modelName = Class.getModelName();
-  options.pluralName = Class.getPluralName();
-  options.relations = Class.getRelations();
-
-  return options;
-}
-
 class ActiveRecord extends Model {
   constructor(attributes = {}) {
     super(attributes);
 
+    // set primary key if available
     let pk = this.getClass().getPrimaryKey();
     ActiveRecord.defineProperty(this, pk);
     this.setPrimaryKeyValue(attributes[pk]);
 
+    // set foreign keys
     let foreignKeys = this.getClass().getForeignKeys();
     _.each(foreignKeys, (key) => {
       ActiveRecord.defineProperty(this, key);
     });
     this.setForeignAttributes(attributes);
+
+    // set relations
+    // relations are stored differently than normal attributes
+    this._relations = {};
+    var instance = this;
+    var relations = this.getClass().getRelations();
+    _.each(relations, (relation, name) => {
+      Object.defineProperty(this, name, {
+        get: function() {
+          return instance._relations[name];
+        },
+
+        set: function(value) {
+          instance._relations[name] = value;
+        }
+      });
+    });
+    this.setRelationAttributes(attributes);
   }
 
   static getPrimaryKey() {
@@ -86,6 +88,7 @@ class ActiveRecord extends Model {
     let pk = this.getClass().getPrimaryKey();
     this.setPrimaryKeyValue(attributes[pk]);
     this.setForeignAttributes(attributes);
+    this.setRelationAttributes(attributes);
     return this;
   }
 
@@ -98,6 +101,15 @@ class ActiveRecord extends Model {
       }
     });
 
+    return this;
+  }
+
+  setRelationAttributes(attributes = {}) {
+    var relations = this.getClass().getRelations();
+    _.each(relations, (relation, name) => {
+      var relationFunction = relationFunctions[relation.type];
+      this[name] = relationFunction(this, relation, attributes[name]);
+    });
     return this;
   }
 
@@ -214,6 +226,13 @@ class ActiveRecord extends Model {
           return results;
         });
       });
+    });
+  }
+
+  static deleteOne(filter = {}, options = {}) {
+    filter.limit = 1;
+    return this.deleteAll(filter, options).then((results) => {
+      return results[0] || null;
     });
   }
 
