@@ -452,198 +452,75 @@ var ActiveRecord = (function (_Model) {
       return _.clone(this.relations) || {};
     }
   }, {
-    key: 'getApiName',
-    value: function getApiName() {
-      return this.getPluralName();
-    }
+    key: 'api',
+    value: function api(name, definition, handler) {
+      this._api = this._api || {};
+      this._api[name] = this._api[name] || {};
+      this._api[name].definition = definition;
 
-    /**
-     * Gets the user-defined end points and merge them with the default ones
-     * By default there are 5 endpoints for
-     * - find all records (findAll)
-     * - find one record (find)
-     * - create new record (create)
-     * - update existing record (update)
-     * - delete a record (delete)
-     * @return {Object}
-     */
-
-  }, {
-    key: 'getEndPoints',
-    value: function getEndPoints() {
-      var userDefinedEndPoints = this.endPoints || {};
-      return _.extend({}, this.getDefaultEndPoints(), userDefinedEndPoints);
-    }
-
-    /**
-     * A list of default end points
-     * @return {Object}
-     */
-
-  }, {
-    key: 'getDefaultEndPoints',
-    value: function getDefaultEndPoints() {
-      return this.defaultEndPoints || {
-        'list': {
-          'path': '/',
-          'type': 'GET',
-          'args': {
-            'where': 'object',
-            'include': 'any',
-            'field': ['string'],
-            'order': ['string'],
-            'limit': 'number',
-            'offset': 'number'
-          }
-        },
-
-        'find': {
-          'path': defaultPathForId(this),
-          'type': 'GET',
-          'args': defaultArgsForId(this)
-        },
-
-        'create': {
-          'path': '/',
-          'type': 'POST'
-        },
-
-        'update': {
-          'path': defaultPathForId(this),
-          'type': 'PUT',
-          'args': defaultArgsForId(this)
-        },
-
-        'delete': {
-          'path': defaultPathForId(this),
-          'type': 'DELETE',
-          'args': defaultArgsForId(this)
-        }
-      };
+      if (handler) {
+        this.handleApi(name, handler);
+      }
     }
   }, {
-    key: '_runHooks',
-    value: function _runHooks(hooks, ignoreError, args, result) {
+    key: 'disableApi',
+    value: function disableApi(name, disabled) {
+      this._api = this._api || {};
+      if (this._api[name]) {
+        this._api[name].disabled = !!disabled;
+      }
+    }
+  }, {
+    key: 'handleApi',
+    value: function handleApi(name, fn) {
+      this._api = this._api || {};
+      this._api[name] = this._api[name] || {};
+      this._api[name].handler = fn.bind(this);
+    }
+  }, {
+    key: 'callApi',
+    value: function callApi(name, args, ctx) {
       var _this11 = this;
 
-      if (!hooks || !hooks.length) {
-        return Promise.resolve(true);
-      }
+      this._api = this._api || {};
+      var api = this._api[name];
 
-      var hook = hooks.shift();
-
-      return util.tryPromise(hook.call(this, args, result)).catch(function (e) {
-        if (ignoreError) {
-          return false;
-        }
-        return Promise.reject(e);
-      }).then(function () {
-        return _this11._runHooks(hooks, ignoreError, args, result);
-      });
-    }
-  }, {
-    key: 'executeApi',
-    value: function executeApi(methodName, args, context) {
-      var _this12 = this;
-
-      var method = this[methodName];
-
-      if (!method) {
-        var error = new Error(methodName + ' is not found');
+      if (!api || api.disabled || !api.definition) {
+        var error = new Error('API "' + name + '" is not found');
         error.httpCode = error.code = 500;
         return Promise.reject(error);
       }
 
-      var promises = [];
+      var handler = api.handler;
 
-      // Processes before hooks, skips the process when there is a rejection
-      var beforeHooks = (this._beforeHooks || {})[methodName];
-      return this._runHooks(beforeHooks, false, args).then(function () {
-        return util.tryPromise(method.call(_this12, args, context));
+      if (!handler || !_.isFunction(handler)) {
+        var error = new Error('API "' + name + '" is not usable');
+        error.httpCode = error.code = 500;
+        return Promise.reject(error);
+      }
+
+      return this.runHook('api:before:' + name, args, ctx).then(function () {
+        return handler(args, ctx);
       }).then(function (result) {
-        // Processes after hooks and ignores rejection
-        var afterHooks = (_this12._afterHooks || {})[methodName];
-        return _this12._runHooks(afterHooks, true, args, result).then(function () {
+        return _this11.runHook('api:after:' + name, result, args, ctx).then(function () {
           return result;
         });
       });
     }
-
-    /**
-     * This method is called before the execution of an api handler
-     * @param  {String}   methodName method name
-     * @param  {Function} fn         the funciton to be executed
-     * @return {Promise}
-     */
-
+  }, {
+    key: 'getApiName',
+    value: function getApiName() {
+      return this.getPluralName();
+    }
   }, {
     key: 'beforeApi',
-    value: function beforeApi(methodName, fn) {
-      this._beforeHooks = this._beforeHooks || {};
-      if (!this._beforeHooks[methodName]) {
-        this._beforeHooks[methodName] = [];
-      }
-
-      this._beforeHooks[methodName].push(fn);
+    value: function beforeApi(name, fn) {
+      this.watch('api:after:' + name, fn);
     }
-  }, {
-    key: 'clearBeforeApiHooks',
-    value: function clearBeforeApiHooks() {
-      this._beforeHooks = {};
-    }
-
-    /**
-     * This method is called after the execution of an api handler
-     * @param  {String}   methodName method name
-     * @param  {Function} fn         the funciton to be executed
-     * @return {Promise}
-     */
-
   }, {
     key: 'afterApi',
-    value: function afterApi(methodName, fn) {
-      this._afterHooks = this._afterHooks || {};
-      if (!this._afterHooks[methodName]) {
-        this._afterHooks[methodName] = [];
-      }
-
-      this._afterHooks[methodName].push(fn);
-    }
-  }, {
-    key: 'clearAfterApiHooks',
-    value: function clearAfterApiHooks() {
-      this._afterHooks = {};
-    }
-
-    // Default API handlers
-
-  }, {
-    key: 'list',
-    value: function list(args, context) {
-      return this.findAll(args);
-    }
-  }, {
-    key: 'find',
-    value: function find(args, context) {
-      return this.findByPk(args[this.getPrimaryKey()]);
-    }
-  }, {
-    key: 'create',
-    value: function create(args, context) {
-      var instance = new this(args);
-      return instance.save();
-    }
-  }, {
-    key: 'update',
-    value: function update(args, context) {
-      var instance = new this(args);
-      return instance.save();
-    }
-  }, {
-    key: 'delete',
-    value: function _delete(args, context) {
-      var instance = new this(args);
-      return instance.delete();
+    value: function afterApi(name, fn) {
+      this.watch('api:before:' + name, fn);
     }
   }]);
 
