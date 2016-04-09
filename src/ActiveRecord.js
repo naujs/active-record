@@ -361,171 +361,66 @@ class ActiveRecord extends Model {
   }
 
   // API stuff
+  static api(name, definition, handler) {
+    this._api = this._api || {};
+    this._api[name] = this._api[name] || {};
+    this._api[name].definition = definition;
 
-  static getApiName() {
-    return this.getPluralName();
-  }
-
-  /**
-   * Gets the user-defined end points and merge them with the default ones
-   * By default there are 5 endpoints for
-   * - find all records (findAll)
-   * - find one record (find)
-   * - create new record (create)
-   * - update existing record (update)
-   * - delete a record (delete)
-   * @return {Object}
-   */
-  static getEndPoints() {
-    let userDefinedEndPoints = this.endPoints || {};
-    return _.extend({}, this.getDefaultEndPoints(), userDefinedEndPoints);
-  }
-
-  /**
-   * A list of default end points
-   * @return {Object}
-   */
-  static getDefaultEndPoints() {
-    return this.defaultEndPoints || {
-      'list': {
-        'path': '/',
-        'type': 'GET',
-        'args': {
-          'where': 'object',
-          'include': 'any',
-          'field': ['string'],
-          'order': ['string'],
-          'limit': 'number',
-          'offset': 'number'
-        }
-      },
-
-      'find': {
-        'path': defaultPathForId(this),
-        'type': 'GET',
-        'args': defaultArgsForId(this)
-      },
-
-      'create': {
-        'path': '/',
-        'type': 'POST'
-      },
-
-      'update': {
-        'path': defaultPathForId(this),
-        'type': 'PUT',
-        'args': defaultArgsForId(this)
-      },
-
-      'delete': {
-        'path': defaultPathForId(this),
-        'type': 'DELETE',
-        'args': defaultArgsForId(this)
-      }
-    };
-  }
-
-  static _runHooks(hooks, ignoreError, args, result) {
-    if (!hooks || !hooks.length) {
-      return Promise.resolve(true);
+    if (handler) {
+      this.handleApi(name, handler);
     }
-
-    let hook = hooks.shift();
-
-    return util.tryPromise(hook.call(this, args, result)).catch((e) => {
-      if (ignoreError) {
-        return false;
-      }
-      return Promise.reject(e);
-    }).then(() => {
-      return this._runHooks(hooks, ignoreError, args, result);
-    });
   }
 
-  static executeApi(methodName, args, context) {
-    let method = this[methodName];
+  static disableApi(name, disabled) {
+    this._api = this._api || {};
+    if (this._api[name]) {
+      this._api[name].disabled = !!disabled;
+    }
+  }
 
-    if (!method) {
-      let error = new Error(`${methodName} is not found`);
+  static handleApi(name, fn) {
+    this._api = this._api || {};
+    this._api[name] = this._api[name] || {};
+    this._api[name].handler = fn.bind(this);
+  }
+
+  static callApi(name, args, ctx) {
+    this._api = this._api || {};
+    var api = this._api[name];
+
+    if (!api || api.disabled || !api.definition) {
+      let error = new Error(`API "${name}" is not found`);
       error.httpCode = error.code = 500;
       return Promise.reject(error);
     }
 
-    let promises = [];
+    var handler = api.handler;
 
-    // Processes before hooks, skips the process when there is a rejection
-    let beforeHooks = (this._beforeHooks || {})[methodName];
-    return this._runHooks(beforeHooks, false, args).then(() => {
-      return util.tryPromise(method.call(this, args, context));
+    if (!handler || !_.isFunction(handler)) {
+      let error = new Error(`API "${name}" is not usable`);
+      error.httpCode = error.code = 500;
+      return Promise.reject(error);
+    }
+
+    return this.runHook(`api:before:${name}`, args, ctx).then(() => {
+      return handler(args, ctx);
     }).then((result) => {
-      // Processes after hooks and ignores rejection
-      let afterHooks = (this._afterHooks || {})[methodName];
-      return this._runHooks(afterHooks, true, args, result).then(() => {
+      return this.runHook(`api:after:${name}`, result, args, ctx).then(() => {
         return result;
       });
     });
   }
 
-  /**
-   * This method is called before the execution of an api handler
-   * @param  {String}   methodName method name
-   * @param  {Function} fn         the funciton to be executed
-   * @return {Promise}
-   */
-  static beforeApi(methodName, fn) {
-    this._beforeHooks = this._beforeHooks || {};
-    if (!this._beforeHooks[methodName]) {
-      this._beforeHooks[methodName] = [];
-    }
-
-    this._beforeHooks[methodName].push(fn);
+  static getApiName() {
+    return this.getPluralName();
   }
 
-  static clearBeforeApiHooks() {
-    this._beforeHooks = {};
+  static beforeApi(name, fn) {
+    this.watch(`api:after:${name}`, fn);
   }
 
-  /**
-   * This method is called after the execution of an api handler
-   * @param  {String}   methodName method name
-   * @param  {Function} fn         the funciton to be executed
-   * @return {Promise}
-   */
-  static afterApi(methodName, fn) {
-    this._afterHooks = this._afterHooks || {};
-    if (!this._afterHooks[methodName]) {
-      this._afterHooks[methodName] = [];
-    }
-
-    this._afterHooks[methodName].push(fn);
-  }
-
-  static clearAfterApiHooks() {
-    this._afterHooks = {};
-  }
-
-  // Default API handlers
-  static list(args, context) {
-    return this.findAll(args);
-  }
-
-  static find(args, context) {
-    return this.findByPk(args[this.getPrimaryKey()]);
-  }
-
-  static create(args, context) {
-    var instance = new this(args);
-    return instance.save();
-  }
-
-  static update(args, context) {
-    var instance = new this(args);
-    return instance.save();
-  }
-
-  static delete(args, context) {
-    var instance = new this(args);
-    return instance.delete();
+  static afterApi(name, fn) {
+    this.watch(`api:before:${name}`, fn);
   }
 }
 

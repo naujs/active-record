@@ -892,219 +892,37 @@ describe('ActiveRecord', () => {
     });
   });
 
-  // describe('.getDefaultEndPoints', () => {
-  //   it('should construct default end points using the defined primary key', () => {
-  //     expect(Dummy.getDefaultEndPoints()).toEqual(DEFAULT_ENDPOINTS);
-  //   });
-  // });
-  //
-  // describe('#getEndPoints', () => {
-  //   afterEach(() => {
-  //     delete Dummy.endPoints;
-  //   });
-  //
-  //   it('should merge user-defined end points and default end points', () => {
-  //     Dummy.endPoints = {
-  //       'test': {
-  //         path: 'test',
-  //         type: 'GET'
-  //       }
-  //     };
-  //
-  //     expect(Dummy.getEndPoints()).toEqual(_.extend({
-  //       'test': {
-  //         path: 'test',
-  //         type: 'GET'
-  //       }
-  //     }, DEFAULT_ENDPOINTS));
-  //   });
-  // });
-  //
-  // describe('.executeApi', () => {
-  //   beforeEach(() => {
-  //     DEFAULT_API_HANDLERS.forEach((method) => {
-  //       spyOn(Dummy, method).and.callFake(function() {
-  //         return Promise.resolve({});
-  //       });
-  //     });
-  //   });
-  //
-  //   afterEach(() => {
-  //     DEFAULT_API_HANDLERS.forEach((method) => {
-  //       Dummy[method].calls.reset();
-  //       Dummy[method].and.callThrough();
-  //     });
-  //   });
-  //
-  //   it('should call method with correct arguments', () => {
-  //     return Dummy.executeApi('list', {where: {test: 'test'}}).then(() => {
-  //       expect(Dummy.list.calls.count()).toEqual(1);
-  //       expect(Dummy.list).toHaveBeenCalledWith({
-  //         where: {
-  //           test: 'test'
-  //         }
-  //       }, undefined);
-  //     });
-  //   });
-  //
-  //   DEFAULT_API_HANDLERS.forEach((method) => {
-  //     it(`should call #${method} on data mapper`, () => {
-  //       return Dummy.executeApi(method).then(() => {
-  //         expect(Dummy[method]).toHaveBeenCalled();
-  //       });
-  //     });
-  //   });
-  //
-  //   it('should return error when the method is not found', () => {
-  //     return Dummy.executeApi('invalid').then(function() {
-  //       throw 'Should not succeed';
-  //     }, (error) => {
-  //       expect(error.code).toEqual(500);
-  //       expect(error.httpCode).toEqual(500);
-  //     });
-  //   });
-  // });
-  //
-  // describe('.beforeApi', () => {
-  //   var before0, before1, calls;
-  //
-  //   beforeEach(() => {
-  //     Dummy.clearBeforeApiHooks();
-  //
-  //     before0 = jasmine.createSpy();
-  //     before1 = jasmine.createSpy();
-  //     calls = [];
-  //     Dummy.beforeApi('list', before0);
-  //     Dummy.beforeApi('list', before1);
-  //
-  //     spyOn(Dummy, 'list').and.callFake(() => {
-  //       return Promise.resolve([]);
-  //     });
-  //   });
-  //
-  //   afterEach(() => {
-  //     Dummy.list.calls.reset();
-  //     Dummy.list.and.callThrough();
-  //   });
-  //
-  //   it('should call before hooks before calling the method', () => {
-  //     before0.and.callFake(() => {
-  //       calls.push(0);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     before1.and.callFake(() => {
-  //       calls.push(1);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     Dummy.list.and.callFake(() => {
-  //       calls.push(2);
-  //       return Promise.resolve({});
-  //     });
-  //
-  //     return Dummy.executeApi('list', {test: 'test'}).then(() => {
-  //       expect(calls).toEqual([0, 1, 2]);
-  //       expect(before0).toHaveBeenCalledWith({test: 'test'}, undefined);
-  //       expect(before1).toHaveBeenCalledWith({test: 'test'}, undefined);
-  //     });
-  //   });
-  //
-  //   it('should not call the method when any of the before hooks return error', () => {
-  //     before0.and.callFake(() => {
-  //       calls.push(0);
-  //       let error = new Error();
-  //       error.code = 400;
-  //       return Promise.reject(error);
-  //     });
-  //
-  //     before1.and.callFake(() => {
-  //       calls.push(1);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     Dummy.list.and.callFake(() => {
-  //       calls.push(2);
-  //       return Promise.resolve({});
-  //     });
-  //
-  //     return Dummy.executeApi('list', {test: 'test'}).then(fail, (error) => {
-  //       expect(calls).toEqual([0]);
-  //       expect(error.code).toEqual(400);
-  //     });
-  //   });
-  //
-  // });
-  //
-  // describe('.afterApi', () => {
-  //   var after0, after1, calls;
-  //
-  //   beforeEach(() => {
-  //     Dummy.clearAfterApiHooks();
-  //
-  //     after0 = jasmine.createSpy();
-  //     after1 = jasmine.createSpy();
-  //     calls = [];
-  //     Dummy.afterApi('list', after0);
-  //     Dummy.afterApi('list', after1);
-  //
-  //     spyOn(Dummy, 'list').and.callFake(() => {
-  //       return Promise.resolve([]);
-  //     });
-  //   });
-  //
-  //   afterEach(() => {
-  //     Dummy.list.calls.reset();
-  //     Dummy.list.and.callThrough();
-  //   });
-  //
-  //   it('should call after hooks after calling the method', () => {
-  //     after0.and.callFake(() => {
-  //       calls.push(0);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     after1.and.callFake(() => {
-  //       calls.push(1);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     Dummy.list.and.callFake(() => {
-  //       calls.push(2);
-  //       return Promise.resolve(3);
-  //     });
-  //
-  //     return Dummy.executeApi('list', {test: 'test'}).then(() => {
-  //       expect(calls).toEqual([2, 0, 1]);
-  //       expect(after0).toHaveBeenCalledWith({test: 'test'}, 3);
-  //       expect(after1).toHaveBeenCalledWith({test: 'test'}, 3);
-  //     });
-  //   });
-  //
-  //   it('should ignore error during the execution of after hooks', () => {
-  //     after0.and.callFake(() => {
-  //       calls.push(0);
-  //       let error = new Error();
-  //       error.code = 400;
-  //       return Promise.reject(error);
-  //     });
-  //
-  //     after1.and.callFake(() => {
-  //       calls.push(1);
-  //       return Promise.resolve(true);
-  //     });
-  //
-  //     Dummy.list.and.callFake(() => {
-  //       calls.push(2);
-  //       return Promise.resolve(3);
-  //     });
-  //
-  //     return Dummy.executeApi('list', {test: 'test'}).then(() => {
-  //       expect(calls).toEqual([2, 0, 1]);
-  //       expect(after0).toHaveBeenCalledWith({test: 'test'}, 3);
-  //       expect(after1).toHaveBeenCalledWith({test: 'test'}, 3);
-  //     });
-  //   });
-  // });
+  describe('API', () => {
+    beforeEach(() => {
+      Store.api('list', {
+        path: '/',
+        method: 'GET',
+        args: {
+          filter: 'object'
+        }
+      }, (args, ctx) => {
+        return Store.findAll(args.filter);
+      });
 
+      spyOn(Store, 'findAll').and.callFake(() => {
+        return Promise.resolve([]);
+      });
+    });
+
+    it('should call correct handler', () => {
+      return Store.callApi('list', {
+        filter: {
+          where: {
+            name: 'Store 1'
+          }
+        }
+      }, {}).then(() => {
+        expect(Store.findAll).toHaveBeenCalledWith({
+          where: {
+            name: 'Store 1'
+          }
+        });
+      });
+    });
+  });
 });
