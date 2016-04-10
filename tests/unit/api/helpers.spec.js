@@ -25,7 +25,7 @@ describe('api/helpers', () => {
       expect(helpers.generateArgsFromProperties(Store)).toEqual({
         name: {
           type: 'string',
-          required: false
+          required: true
         },
         displayName: {
           type: 'string',

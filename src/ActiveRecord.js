@@ -194,9 +194,9 @@ class ActiveRecord extends Model {
     return this.getClass().getConnector();
   }
 
-  static findOne(filter = {}, options = {}) {
+  static findOne(filter = {}) {
     filter.limit = 1;
-    return this.findAll(filter, options).then((results) => {
+    return this.findAll(filter).then((results) => {
       if (!results.length) {
         return null;
       }
@@ -205,8 +205,8 @@ class ActiveRecord extends Model {
     });
   }
 
-  static findAll(filter, options = {}) {
-    return this.getConnector().read(new DbCriteria(this, filter, options), options).then((results) => {
+  static findAll(filter) {
+    return this.getConnector().read(new DbCriteria(this, filter)).then((results) => {
       if (!_.isArray(results) || !_.size(results)) {
         return [];
       }
@@ -218,7 +218,7 @@ class ActiveRecord extends Model {
       return this.runHook('afterFind', {
         instances: instances,
         filter: filter
-      }, options).then(() => {
+      }).then(() => {
         return instances;
       });
     });
@@ -232,25 +232,25 @@ class ActiveRecord extends Model {
     return this.findOne(filter);
   }
 
-  static deleteAll(filter, options = {}) {
+  static deleteAll(filter) {
     return this.runHook('beforeDelete', {
       filter: filter
-    }, options).then(() => {
-      let criteria = new DbCriteria(this, filter, options);
-      return this.getConnector().delete(criteria, options).then((results) => {
+    }).then(() => {
+      let criteria = new DbCriteria(this, filter);
+      return this.getConnector().delete(criteria).then((results) => {
         return this.runHook('afterDelete', {
           filter: filter,
           deleted: results
-        }, options).then(() => {
+        }).then(() => {
           return results;
         });
       });
     });
   }
 
-  static deleteOne(filter = {}, options = {}) {
+  static deleteOne(filter = {}) {
     filter.limit = 1;
-    return this.deleteAll(filter, options).then((results) => {
+    return this.deleteAll(filter).then((results) => {
       return results[0] || null;
     });
   }
@@ -269,29 +269,29 @@ class ActiveRecord extends Model {
     return this.getConnector().count(criteria);
   }
 
-  create(options = {}) {
+  create() {
     if (!this.isNew()) {
       return Promise.reject('Can only create new models');
     }
 
-    return this.validate(options).then((result) => {
+    return this.validate().then((result) => {
       if (!result) {
         return false;
       }
 
       return this.runHook('beforeCreate', {
         instance: this
-      }, options).then(() => {
+      }).then(() => {
         let attributes = this.getPersistableAttributes();
-        let criteria = new DbCriteria(this, {}, options);
+        let criteria = new DbCriteria(this, {});
 
         criteria.setAttributes(attributes);
-        return this.getConnector().create(criteria, options).then((result) => {
+        return this.getConnector().create(criteria).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterCreate', {
             instance: this
-          }, options).then(() => {
+          }).then(() => {
             return this;
           });
         });
@@ -299,19 +299,19 @@ class ActiveRecord extends Model {
     });
   }
 
-  update(options = {}) {
+  update() {
     if (this.isNew()) {
       return Promise.reject('Cannot update new model');
     }
 
-    return this.validate(options).then((result) => {
+    return this.validate().then((result) => {
       if (!result) {
         return false;
       }
 
       return this.runHook('beforeUpdate', {
         instance: this
-      }, options).then((result) => {
+      }).then((result) => {
         if (!result) {
           return false;
         }
@@ -322,15 +322,15 @@ class ActiveRecord extends Model {
         let primaryKey = this.getClass().getPrimaryKey();
         filter.where[primaryKey] = this.getPrimaryKeyValue();
 
-        let criteria = new DbCriteria(this, filter, options);
+        let criteria = new DbCriteria(this, filter);
         criteria.setAttributes(attributes);
 
-        return this.getConnector().update(criteria, options).then((result) => {
+        return this.getConnector().update(criteria).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterUpdate', {
             instance: this
-          }, options).then(() => {
+          }).then(() => {
             return this;
           });
         });
@@ -338,7 +338,7 @@ class ActiveRecord extends Model {
     });
   }
 
-  save(options = {}) {
+  save() {
     var method = 'update';
     if (this.isNew()) {
       method = 'create';
@@ -346,12 +346,14 @@ class ActiveRecord extends Model {
 
     return this.runHook('beforeSave', {
       instance: this
-    }, options).then(() => {
-      return this[method].call(this, options);
     }).then(() => {
+      return this[method].call(this);
+    }).then((result) => {
+      if (result === false) return false;
+
       return this.runHook('afterSave', {
         instance: this
-      }, options).then(() => {
+      }).then(() => {
         return this;
       }, () => {
         return this;
@@ -359,24 +361,24 @@ class ActiveRecord extends Model {
     });
   }
 
-  delete(options = {}) {
+  delete() {
     if (this.isNew()) {
       return Promise.reject('Cannot delete new model');
     }
 
     return this.runHook('beforeDelete', {
       instance: this
-    }, options).then((result) => {
+    }).then((result) => {
       let filter = {};
       filter.where = {};
       let primaryKey = this.getClass().getPrimaryKey();
       filter.where[primaryKey] = this.getPrimaryKeyValue();
-      let criteria = new DbCriteria(this, filter, options);
+      let criteria = new DbCriteria(this, filter);
 
-      return this.getConnector().delete(criteria, options).then((result) => {
+      return this.getConnector().delete(criteria).then((result) => {
         return this.runHook('afterDelete', {
           instance: this
-        }, options).then(() => {
+        }).then(() => {
           return this;
         });
       });

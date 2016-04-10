@@ -203,30 +203,28 @@ var ActiveRecord = (function (_Model) {
     value: function create() {
       var _this6 = this;
 
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
       if (!this.isNew()) {
         return Promise.reject('Can only create new models');
       }
 
-      return this.validate(options).then(function (result) {
+      return this.validate().then(function (result) {
         if (!result) {
           return false;
         }
 
         return _this6.runHook('beforeCreate', {
           instance: _this6
-        }, options).then(function () {
+        }).then(function () {
           var attributes = _this6.getPersistableAttributes();
-          var criteria = new DbCriteria(_this6, {}, options);
+          var criteria = new DbCriteria(_this6, {});
 
           criteria.setAttributes(attributes);
-          return _this6.getConnector().create(criteria, options).then(function (result) {
+          return _this6.getConnector().create(criteria).then(function (result) {
             _this6.setAttributes(result);
 
             return _this6.runHook('afterCreate', {
               instance: _this6
-            }, options).then(function () {
+            }).then(function () {
               return _this6;
             });
           });
@@ -238,20 +236,18 @@ var ActiveRecord = (function (_Model) {
     value: function update() {
       var _this7 = this;
 
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
       if (this.isNew()) {
         return Promise.reject('Cannot update new model');
       }
 
-      return this.validate(options).then(function (result) {
+      return this.validate().then(function (result) {
         if (!result) {
           return false;
         }
 
         return _this7.runHook('beforeUpdate', {
           instance: _this7
-        }, options).then(function (result) {
+        }).then(function (result) {
           if (!result) {
             return false;
           }
@@ -262,15 +258,15 @@ var ActiveRecord = (function (_Model) {
           var primaryKey = _this7.getClass().getPrimaryKey();
           filter.where[primaryKey] = _this7.getPrimaryKeyValue();
 
-          var criteria = new DbCriteria(_this7, filter, options);
+          var criteria = new DbCriteria(_this7, filter);
           criteria.setAttributes(attributes);
 
-          return _this7.getConnector().update(criteria, options).then(function (result) {
+          return _this7.getConnector().update(criteria).then(function (result) {
             _this7.setAttributes(result);
 
             return _this7.runHook('afterUpdate', {
               instance: _this7
-            }, options).then(function () {
+            }).then(function () {
               return _this7;
             });
           });
@@ -282,8 +278,6 @@ var ActiveRecord = (function (_Model) {
     value: function save() {
       var _this8 = this;
 
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
       var method = 'update';
       if (this.isNew()) {
         method = 'create';
@@ -291,12 +285,14 @@ var ActiveRecord = (function (_Model) {
 
       return this.runHook('beforeSave', {
         instance: this
-      }, options).then(function () {
-        return _this8[method].call(_this8, options);
       }).then(function () {
+        return _this8[method].call(_this8);
+      }).then(function (result) {
+        if (result === false) return false;
+
         return _this8.runHook('afterSave', {
           instance: _this8
-        }, options).then(function () {
+        }).then(function () {
           return _this8;
         }, function () {
           return _this8;
@@ -308,25 +304,23 @@ var ActiveRecord = (function (_Model) {
     value: function _delete() {
       var _this9 = this;
 
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
       if (this.isNew()) {
         return Promise.reject('Cannot delete new model');
       }
 
       return this.runHook('beforeDelete', {
         instance: this
-      }, options).then(function (result) {
+      }).then(function (result) {
         var filter = {};
         filter.where = {};
         var primaryKey = _this9.getClass().getPrimaryKey();
         filter.where[primaryKey] = _this9.getPrimaryKeyValue();
-        var criteria = new DbCriteria(_this9, filter, options);
+        var criteria = new DbCriteria(_this9, filter);
 
-        return _this9.getConnector().delete(criteria, options).then(function (result) {
+        return _this9.getConnector().delete(criteria).then(function (result) {
           return _this9.runHook('afterDelete', {
             instance: _this9
-          }, options).then(function () {
+          }).then(function () {
             return _this9;
           });
         });
@@ -386,10 +380,9 @@ var ActiveRecord = (function (_Model) {
     key: 'findOne',
     value: function findOne() {
       var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       filter.limit = 1;
-      return this.findAll(filter, options).then(function (results) {
+      return this.findAll(filter).then(function (results) {
         if (!results.length) {
           return null;
         }
@@ -402,9 +395,7 @@ var ActiveRecord = (function (_Model) {
     value: function findAll(filter) {
       var _this10 = this;
 
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-      return this.getConnector().read(new DbCriteria(this, filter, options), options).then(function (results) {
+      return this.getConnector().read(new DbCriteria(this, filter)).then(function (results) {
         if (!_.isArray(results) || !_.size(results)) {
           return [];
         }
@@ -416,7 +407,7 @@ var ActiveRecord = (function (_Model) {
         return _this10.runHook('afterFind', {
           instances: instances,
           filter: filter
-        }, options).then(function () {
+        }).then(function () {
           return instances;
         });
       });
@@ -437,17 +428,15 @@ var ActiveRecord = (function (_Model) {
     value: function deleteAll(filter) {
       var _this11 = this;
 
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
       return this.runHook('beforeDelete', {
         filter: filter
-      }, options).then(function () {
-        var criteria = new DbCriteria(_this11, filter, options);
-        return _this11.getConnector().delete(criteria, options).then(function (results) {
+      }).then(function () {
+        var criteria = new DbCriteria(_this11, filter);
+        return _this11.getConnector().delete(criteria).then(function (results) {
           return _this11.runHook('afterDelete', {
             filter: filter,
             deleted: results
-          }, options).then(function () {
+          }).then(function () {
             return results;
           });
         });
@@ -457,10 +446,9 @@ var ActiveRecord = (function (_Model) {
     key: 'deleteOne',
     value: function deleteOne() {
       var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       filter.limit = 1;
-      return this.deleteAll(filter, options).then(function (results) {
+      return this.deleteAll(filter).then(function (results) {
         return results[0] || null;
       });
     }

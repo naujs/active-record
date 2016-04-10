@@ -101,15 +101,11 @@ describe('ActiveRecord', () => {
         where: {name: 'Store 1'}
       };
 
-      var options = {
-        random: 'stuff'
-      };
-
-      var expectedCriteria = new DbCriteria(Store, filter, options);
+      var expectedCriteria = new DbCriteria(Store, filter);
       expectedCriteria.limit(1);
 
-      return Store.findOne(filter, options).then(() => {
-        expect(connector.read).toHaveBeenCalledWith(expectedCriteria, options);
+      return Store.findOne(filter).then(() => {
+        expect(connector.read).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -125,11 +121,7 @@ describe('ActiveRecord', () => {
         where: {name: 'Store 1'}
       };
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return Store.findOne(filter, options).then((instance) => {
+      return Store.findOne(filter).then((instance) => {
         expect(instance instanceof Store).toBe(true);
         expect(instance.id).toEqual(1);
         expect(instance.name).toEqual('Store 1');
@@ -152,20 +144,15 @@ describe('ActiveRecord', () => {
         }
       };
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return Store.findOne(filter, options).then(() => {
+      return Store.findOne(filter).then(() => {
         expect(onAfterFind.calls.count()).toEqual(1);
         var args = onAfterFind.calls.argsFor(0);
-        expect(args.length).toBe(2);
+        expect(args.length).toBe(1);
         var context = args[0];
         expect(context.instances.length).toBe(1);
         expect(context.instances[0] instanceof Store).toBe(true);
         expect(context.filter).toEqual(filter);
         expect(context.instances[0].getAttributes()).toEqual(data);
-        expect(args[1]).toEqual(options);
       });
     });
 
@@ -218,14 +205,10 @@ describe('ActiveRecord', () => {
         where: {user_id: 1}
       };
 
-      var options = {
-        random: 'stuff'
-      };
+      var expectedCriteria = new DbCriteria(Store, filter);
 
-      var expectedCriteria = new DbCriteria(Store, filter, options);
-
-      return Store.findAll(filter, options).then(() => {
-        expect(connector.read).toHaveBeenCalledWith(expectedCriteria, options);
+      return Store.findAll(filter).then(() => {
+        expect(connector.read).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -247,11 +230,7 @@ describe('ActiveRecord', () => {
         where: {user_id: 1}
       };
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return Store.findAll(filter, options).then((instances) => {
+      return Store.findAll(filter).then((instances) => {
         _.each(instances, (instance, index) => { //eslint-disable-line max-nested-callbacks
           expect(instance instanceof Store).toBe(true);
           expect(instance.id).toEqual(index + 1);
@@ -274,11 +253,7 @@ describe('ActiveRecord', () => {
         ]);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return Store.findAll({}, options).then(() => {
+      return Store.findAll({}).then(() => {
         expect(onAfterFind.calls.count()).toEqual(1);
         var args = onAfterFind.calls.argsFor(0);
         var context = args[0];
@@ -312,18 +287,14 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      var expectedCriteria = new DbCriteria(instance, {}, options);
+      var expectedCriteria = new DbCriteria(instance, {});
 
       expectedCriteria.setAttributes({
         name: 'Store 1'
       });
 
-      return instance.create(options).then(() => {
-        expect(connector.create).toHaveBeenCalledWith(expectedCriteria, options);
+      return instance.create().then(() => {
+        expect(connector.create).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -352,11 +323,7 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.create(options).then((instance) => {
+      return instance.create().then((instance) => {
         expect(instance instanceof Store).toBe(true);
         expect(instance.id).toEqual(1);
       });
@@ -372,12 +339,8 @@ describe('ActiveRecord', () => {
         return Promise.resolve(true);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.create(options).then(() => {
-        expect(instance.validate).toHaveBeenCalledWith(options);
+      return instance.create().then(() => {
+        expect(instance.validate).toHaveBeenCalled();
       });
     });
 
@@ -390,17 +353,12 @@ describe('ActiveRecord', () => {
         return Promise.resolve(instance);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.create(options).then(() => {
+      return instance.create().then(() => {
         expect(onBeforeCreate.calls.count()).toBe(1);
         var args = onBeforeCreate.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
       });
     });
 
@@ -414,33 +372,26 @@ describe('ActiveRecord', () => {
         return Promise.resolve(false);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.create(options).then(() => {
+      return instance.create().then(() => {
         expect(onBeforeCreate.calls.count()).toBe(0);
       });
     });
 
     it('should trigger afterCreate hook', () => {
-      var instance = new Store();
+      var instance = new Store({
+        name: 'Store 1'
+      });
 
       connector.create.and.callFake(() => {
         return Promise.resolve(instance);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.create(options).then(() => {
+      return instance.create().then(() => {
         expect(onAfterCreate.calls.count()).toBe(1);
         var args = onAfterCreate.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
       });
     });
   });
@@ -467,19 +418,15 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      var expectedCriteria = new DbCriteria(instance, {where: {id: 1}}, options);
+      var expectedCriteria = new DbCriteria(instance, {where: {id: 1}});
 
       expectedCriteria.setAttributes({
         id: 1,
         name: 'Store 1'
       });
 
-      return instance.update(options).then(() => {
-        expect(connector.update).toHaveBeenCalledWith(expectedCriteria, options);
+      return instance.update().then(() => {
+        expect(connector.update).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -508,11 +455,7 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.update(options).then((instance) => {
+      return instance.update().then((instance) => {
         expect(instance instanceof Store).toBe(true);
         expect(instance.id).toEqual(1);
         expect(instance.name).toEqual('Store 2');
@@ -535,18 +478,15 @@ describe('ActiveRecord', () => {
         return Promise.resolve(true);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.update(options).then(() => {
-        expect(instance.validate).toHaveBeenCalledWith(options);
+      return instance.update().then(() => {
+        expect(instance.validate).toHaveBeenCalled();
       });
     });
 
     it('should trigger beforeUpdate hook', () => {
       var instance = new Store({
-        id: 1
+        id: 1,
+        name: 'Store 1'
       });
 
       connector.update.and.callFake(() => {
@@ -556,17 +496,12 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.update(options).then(() => {
+      return instance.update().then(() => {
         expect(onBeforeUpdate.calls.count()).toBe(1);
         var args = onBeforeUpdate.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
       });
     });
 
@@ -586,18 +521,15 @@ describe('ActiveRecord', () => {
         return Promise.resolve(false);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.update(options).then(() => {
+      return instance.update().then(() => {
         expect(onBeforeUpdate.calls.count()).toBe(0);
       });
     });
 
     it('should trigger afterUpdate hook', () => {
       var instance = new Store({
-        id: 1
+        id: 1,
+        name: 'Store 1'
       });
 
       connector.update.and.callFake(() => {
@@ -607,17 +539,12 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.update(options).then(() => {
+      return instance.update().then(() => {
         expect(onAfterUpdate.calls.count()).toBe(1);
         var args = onAfterUpdate.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
       });
     });
   });
@@ -645,54 +572,51 @@ describe('ActiveRecord', () => {
     });
 
     it('should call #update if the model is not new', () => {
-      var options = {
-        'random': 'stuff'
-      };
-
       instance.setPrimaryKeyValue(1);
 
-      return instance.save(options).then(() => {
-        expect(instance.update).toHaveBeenCalledWith(options);
+      return instance.save().then(() => {
+        expect(instance.update).toHaveBeenCalled();
       });
     });
 
     it('should call #create if the model is new', () => {
-      var options = {
-        'random': 'stuff'
-      };
-
-      return instance.save(options).then(() => {
-        expect(instance.create).toHaveBeenCalledWith(options);
+      return instance.save().then(() => {
+        expect(instance.create).toHaveBeenCalled();
       });
     });
 
     it('should trigger beforeSave hook', () => {
-      var options = {
-        'random': 'stuff'
-      };
-
-      return instance.save(options).then(() => {
+      return instance.save().then(() => {
         expect(onBeforeSave.calls.count()).toBe(1);
         var args = onBeforeSave.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
       });
     });
 
     it('should trigger afterSave hook', () => {
-      var options = {
-        'random': 'stuff'
-      };
-
-      return instance.save(options).then(() => {
+      return instance.save().then(() => {
         expect(onAfterSave.calls.count()).toBe(1);
         var args = onAfterSave.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
+      });
+    });
+
+    it('should return false if validation fails', () => {
+      var instance = new Store();
+      connector.create.and.callFake(() => {
+        return Promise.resolve(instance);
+      });
+
+      spyOn(instance, 'validate').and.callFake(() => {
+        return Promise.resolve(false);
+      });
+
+      return instance.save().then((result) => {
+        expect(result).toBe(false);
       });
     });
   });
@@ -719,14 +643,10 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
+      var expectedCriteria = new DbCriteria(instance, {where: {id: 1}});
 
-      var expectedCriteria = new DbCriteria(instance, {where: {id: 1}}, options);
-
-      return instance.delete(options).then(() => {
-        expect(connector.delete).toHaveBeenCalledWith(expectedCriteria, options);
+      return instance.delete().then(() => {
+        expect(connector.delete).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -742,17 +662,13 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.delete(options).then(() => {
+      return instance.delete().then(() => {
         expect(onBeforeDelete.calls.count()).toBe(1);
         var args = onBeforeDelete.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
+        expect(args[1]).toEqual();
       });
     });
 
@@ -768,17 +684,13 @@ describe('ActiveRecord', () => {
         });
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
-      return instance.delete(options).then(() => {
+      return instance.delete().then(() => {
         expect(onAfterDelete.calls.count()).toBe(1);
         var args = onAfterDelete.calls.argsFor(0);
         expect(args[0]).toEqual({
           instance: instance
         });
-        expect(args[1]).toEqual(options);
+        expect(args[1]).toEqual();
       });
     });
   });
@@ -809,21 +721,17 @@ describe('ActiveRecord', () => {
         return Promise.resolve(deleted);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
       var filter = {
         where: {
           name: 'Store'
         }
       };
 
-      var expectedCriteria = new DbCriteria(Store, filter, options);
+      var expectedCriteria = new DbCriteria(Store, filter);
 
-      return Store.deleteAll(filter, options).then((results) => {
+      return Store.deleteAll(filter).then((results) => {
         expect(results).toEqual(deleted);
-        expect(connector.delete).toHaveBeenCalledWith(expectedCriteria, options);
+        expect(connector.delete).toHaveBeenCalledWith(expectedCriteria);
       });
     });
 
@@ -832,24 +740,19 @@ describe('ActiveRecord', () => {
         return Promise.resolve(deleted);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
       var filter = {
         where: {
           test: 1
         }
       };
 
-      return Store.deleteAll(filter, options).then((results) => {
+      return Store.deleteAll(filter).then((results) => {
         expect(results).toEqual(deleted);
         expect(onBeforeDelete.calls.count()).toBe(1);
         var args = onBeforeDelete.calls.argsFor(0);
         expect(args[0]).toEqual({
           filter: filter
         });
-        expect(args[1]).toEqual(options);
       });
     });
 
@@ -858,24 +761,19 @@ describe('ActiveRecord', () => {
         return Promise.resolve(deleted);
       });
 
-      var options = {
-        random: 'stuff'
-      };
-
       var filter = {
         where: {
           test: 1
         }
       };
 
-      return Store.deleteAll(filter, options).then(() => {
+      return Store.deleteAll(filter).then(() => {
         expect(onAfterDelete.calls.count()).toBe(1);
         var args = onAfterDelete.calls.argsFor(0);
         expect(args[0]).toEqual({
           filter: filter,
           deleted: deleted
         });
-        expect(args[1]).toEqual(options);
       });
     });
   });
