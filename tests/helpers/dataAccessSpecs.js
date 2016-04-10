@@ -44,7 +44,24 @@ global.testDataAccessMethods = function() {
         expect(store.toJSON()).toEqual({
           name: 'Store 1',
           id: 1,
-          user_id: 1
+          user_id: 1,
+          products: [
+            {
+              name: 'Product 1',
+              id: 1,
+              store_id: 1
+            },
+            {
+              name: 'Product 2',
+              id: 2,
+              store_id: 1
+            },
+            {
+              name: 'Product 3',
+              id: 3,
+              store_id: 1
+            }
+          ]
         });
 
         var products = store.products();
@@ -125,10 +142,14 @@ global.testDataAccessMethods = function() {
       return Store.findByPk(1, {
         include: 'owner'
       }).then((store) => {
-        expect(store.name).toEqual('Store 1');
-        expect(store.owner().toJSON()).toEqual({
-          name: 'User 1',
-          id: 1
+        expect(store.toJSON()).toEqual({
+          name: 'Store 1',
+          id: 1,
+          user_id: 1,
+          owner: {
+            name: 'User 1',
+            id: 1
+          }
         });
       });
     });

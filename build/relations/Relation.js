@@ -91,6 +91,7 @@ var Relation = (function () {
       };
 
       var bound = relatedModel.bind(this);
+      bound.getValue = this.getValue.bind(this);
 
       _.each(this.methods(), function (name) {
         bound[name] = _this2[name].bind(_this2);

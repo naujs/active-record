@@ -149,9 +149,9 @@ class ActiveRecord extends Model {
   }
 
   getPersistableAttributes() {
-    let properties = this.getClass().getProperties();
-    let persitableProperties = this.getClass().getAllProperties();
-    let persistableAttributes = {};
+    var properties = this.getClass().getProperties();
+    var persitableProperties = this.getClass().getAllProperties();
+    var persistableAttributes = {};
 
     _.each(persitableProperties, (name) => {
       if (this[name] != void(0)) {
@@ -163,11 +163,21 @@ class ActiveRecord extends Model {
   }
 
   toJSON() {
-    let json = super.toJSON();
-    let pk = this.getPrimaryKeyValue();
+    var json = super.toJSON();
+    var pk = this.getPrimaryKeyValue();
     if (pk) {
       json[this.getClass().getPrimaryKey()] = pk;
     }
+
+    var relations = this.getClass().getRelations();
+    _.each(relations, (opts, name) => {
+      var relationValue = this[name].getValue();
+      if (relationValue) {
+        // TODO: fix this, it is very insufficient to do this
+        json[name] = JSON.parse(JSON.stringify(relationValue));
+      }
+    });
+
     return json;
   }
 

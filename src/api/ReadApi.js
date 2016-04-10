@@ -18,6 +18,7 @@ class ReadApi extends Api {
           error.httpCode = error.code = 404;
           return Promise.reject(error);
         }
+
         return result;
       }).catch(helpers.handleError);
     });

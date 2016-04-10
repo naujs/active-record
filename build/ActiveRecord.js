@@ -171,11 +171,23 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'toJSON',
     value: function toJSON() {
+      var _this5 = this;
+
       var json = _get(Object.getPrototypeOf(ActiveRecord.prototype), 'toJSON', this).call(this);
       var pk = this.getPrimaryKeyValue();
       if (pk) {
         json[this.getClass().getPrimaryKey()] = pk;
       }
+
+      var relations = this.getClass().getRelations();
+      _.each(relations, function (opts, name) {
+        var relationValue = _this5[name].getValue();
+        if (relationValue) {
+          // TODO: fix this, it is very insufficient to do this
+          json[name] = JSON.parse(JSON.stringify(relationValue));
+        }
+      });
+
       return json;
     }
 
@@ -189,7 +201,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'create',
     value: function create() {
-      var _this5 = this;
+      var _this6 = this;
 
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -202,20 +214,20 @@ var ActiveRecord = (function (_Model) {
           return false;
         }
 
-        return _this5.runHook('beforeCreate', {
-          instance: _this5
+        return _this6.runHook('beforeCreate', {
+          instance: _this6
         }, options).then(function () {
-          var attributes = _this5.getPersistableAttributes();
-          var criteria = new DbCriteria(_this5, {}, options);
+          var attributes = _this6.getPersistableAttributes();
+          var criteria = new DbCriteria(_this6, {}, options);
 
           criteria.setAttributes(attributes);
-          return _this5.getConnector().create(criteria, options).then(function (result) {
-            _this5.setAttributes(result);
+          return _this6.getConnector().create(criteria, options).then(function (result) {
+            _this6.setAttributes(result);
 
-            return _this5.runHook('afterCreate', {
-              instance: _this5
+            return _this6.runHook('afterCreate', {
+              instance: _this6
             }, options).then(function () {
-              return _this5;
+              return _this6;
             });
           });
         });
@@ -224,7 +236,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'update',
     value: function update() {
-      var _this6 = this;
+      var _this7 = this;
 
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -237,29 +249,29 @@ var ActiveRecord = (function (_Model) {
           return false;
         }
 
-        return _this6.runHook('beforeUpdate', {
-          instance: _this6
+        return _this7.runHook('beforeUpdate', {
+          instance: _this7
         }, options).then(function (result) {
           if (!result) {
             return false;
           }
 
-          var attributes = _this6.getPersistableAttributes();
+          var attributes = _this7.getPersistableAttributes();
           var filter = {};
           filter.where = {};
-          var primaryKey = _this6.getClass().getPrimaryKey();
-          filter.where[primaryKey] = _this6.getPrimaryKeyValue();
+          var primaryKey = _this7.getClass().getPrimaryKey();
+          filter.where[primaryKey] = _this7.getPrimaryKeyValue();
 
-          var criteria = new DbCriteria(_this6, filter, options);
+          var criteria = new DbCriteria(_this7, filter, options);
           criteria.setAttributes(attributes);
 
-          return _this6.getConnector().update(criteria, options).then(function (result) {
-            _this6.setAttributes(result);
+          return _this7.getConnector().update(criteria, options).then(function (result) {
+            _this7.setAttributes(result);
 
-            return _this6.runHook('afterUpdate', {
-              instance: _this6
+            return _this7.runHook('afterUpdate', {
+              instance: _this7
             }, options).then(function () {
-              return _this6;
+              return _this7;
             });
           });
         });
@@ -268,7 +280,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'save',
     value: function save() {
-      var _this7 = this;
+      var _this8 = this;
 
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -280,21 +292,21 @@ var ActiveRecord = (function (_Model) {
       return this.runHook('beforeSave', {
         instance: this
       }, options).then(function () {
-        return _this7[method].call(_this7, options);
+        return _this8[method].call(_this8, options);
       }).then(function () {
-        return _this7.runHook('afterSave', {
-          instance: _this7
+        return _this8.runHook('afterSave', {
+          instance: _this8
         }, options).then(function () {
-          return _this7;
+          return _this8;
         }, function () {
-          return _this7;
+          return _this8;
         });
       });
     }
   }, {
     key: 'delete',
     value: function _delete() {
-      var _this8 = this;
+      var _this9 = this;
 
       var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -307,15 +319,15 @@ var ActiveRecord = (function (_Model) {
       }, options).then(function (result) {
         var filter = {};
         filter.where = {};
-        var primaryKey = _this8.getClass().getPrimaryKey();
-        filter.where[primaryKey] = _this8.getPrimaryKeyValue();
-        var criteria = new DbCriteria(_this8, filter, options);
+        var primaryKey = _this9.getClass().getPrimaryKey();
+        filter.where[primaryKey] = _this9.getPrimaryKeyValue();
+        var criteria = new DbCriteria(_this9, filter, options);
 
-        return _this8.getConnector().delete(criteria, options).then(function (result) {
-          return _this8.runHook('afterDelete', {
-            instance: _this8
+        return _this9.getConnector().delete(criteria, options).then(function (result) {
+          return _this9.runHook('afterDelete', {
+            instance: _this9
           }, options).then(function () {
-            return _this8;
+            return _this9;
           });
         });
       });
@@ -388,7 +400,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'findAll',
     value: function findAll(filter) {
-      var _this9 = this;
+      var _this10 = this;
 
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -398,10 +410,10 @@ var ActiveRecord = (function (_Model) {
         }
 
         var instances = _.map(results, function (result) {
-          return new _this9(result);
+          return new _this10(result);
         });
 
-        return _this9.runHook('afterFind', {
+        return _this10.runHook('afterFind', {
           instances: instances,
           filter: filter
         }, options).then(function () {
@@ -423,16 +435,16 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'deleteAll',
     value: function deleteAll(filter) {
-      var _this10 = this;
+      var _this11 = this;
 
       var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       return this.runHook('beforeDelete', {
         filter: filter
       }, options).then(function () {
-        var criteria = new DbCriteria(_this10, filter, options);
-        return _this10.getConnector().delete(criteria, options).then(function (results) {
-          return _this10.runHook('afterDelete', {
+        var criteria = new DbCriteria(_this11, filter, options);
+        return _this11.getConnector().delete(criteria, options).then(function (results) {
+          return _this11.runHook('afterDelete', {
             filter: filter,
             deleted: results
           }, options).then(function () {
