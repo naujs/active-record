@@ -14,11 +14,9 @@ var ReadApi = (function (_Api) {
   _inherits(ReadApi, _Api);
 
   function ReadApi(cls) {
-    var _this;
-
     _classCallCheck(this, ReadApi);
 
-    return _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
+    return _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
       path: helpers.generatePathWithPk(cls),
       method: 'GET',
       args: helpers.generateArgsWithPk(cls, {
@@ -28,8 +26,8 @@ var ReadApi = (function (_Api) {
       var primaryKey = cls.getPrimaryKey();
       return cls.findByPk(args[primaryKey], args.filter).then(function (result) {
         if (!result) {
-          var error = new Error(_this.getModelName() + ' not found');
-          error.httpCode = error.code = 404;
+          var error = new Error(cls.getModelName() + ' not found');
+          error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
 

@@ -27,7 +27,7 @@ var DeleteApi = (function (_Api) {
       return cls.findByPk(pk).then(function (result) {
         if (!result) {
           var error = new Error(cls.getModelName() + ' not found');
-          error.httpCode = error.code = 404;
+          error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
         return result;

@@ -15,7 +15,7 @@ class DeleteApi extends Api {
       return cls.findByPk(pk).then((result) => {
         if (!result) {
           let error = new Error(`${cls.getModelName()} not found`);
-          error.httpCode = error.code = 404;
+          error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
         return result;

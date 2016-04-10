@@ -15,7 +15,7 @@ class UpdateApi extends Api {
       return cls.findByPk(pk).then((result) => {
         if (!result) {
           let error = new Error(`${cls.getModelName()} not found`);
-          error.httpCode = error.code = 404;
+          error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
         return result;
@@ -24,7 +24,7 @@ class UpdateApi extends Api {
         return instance.save().then((result) => {
           if (!result) {
             let error = new Error('Validation failed');
-            error.httpCode = error.code = 400;
+            error.statusCode = error.code = 400;
             error.data = instance.getErrors();
             return Promise.reject(error);
           }

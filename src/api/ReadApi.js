@@ -14,8 +14,8 @@ class ReadApi extends Api {
       var primaryKey = cls.getPrimaryKey();
       return cls.findByPk(args[primaryKey], args.filter).then((result) => {
         if (!result) {
-          let error = new Error(`${this.getModelName()} not found`);
-          error.httpCode = error.code = 404;
+          let error = new Error(`${cls.getModelName()} not found`);
+          error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
 

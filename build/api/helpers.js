@@ -52,11 +52,11 @@ module.exports = {
 
   handleError: function handleError(err) {
     if (err instanceof Error) {
-      return err;
+      return Promise.reject(err);
     }
 
     var error = new Error(err);
-    error.httpCode = error.code = 500;
+    error.statusCode = error.code = 500;
     return Promise.reject(error);
   }
 };
