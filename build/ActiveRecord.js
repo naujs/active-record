@@ -50,31 +50,26 @@ function defaultPathForId(cls) {
 var ActiveRecord = (function (_Model) {
   _inherits(ActiveRecord, _Model);
 
-  // TODO: fix this constructor to define all the extra properties first
-  // then call setAttributes (from super) later
-  // Right now, it calls setAttributes twice
-
   function ActiveRecord() {
     var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
     _classCallCheck(this, ActiveRecord);
 
-    // set primary key if available
+    // Build primaryKey
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ActiveRecord).call(this, attributes));
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ActiveRecord).call(this));
+    // do not pass attributes to super because we need to build other properties
+    // for ActiveRecord
 
     var pk = _this.getClass().getPrimaryKey();
     ActiveRecord.defineProperty(_this, pk);
-    _this.setPrimaryKeyValue(attributes[pk]);
 
-    // set foreign keys
+    // Build foreignKeys
     var foreignKeys = _this.getClass().getForeignKeys();
     _.each(foreignKeys, function (key) {
       ActiveRecord.defineProperty(_this, key);
     });
-    _this.setForeignAttributes(attributes);
 
-    // set relations
     // relations are stored differently than normal attributes
     _this._relations = {};
     var instance = _this;
@@ -90,7 +85,8 @@ var ActiveRecord = (function (_Model) {
         }
       });
     });
-    _this.setRelationAttributes(attributes);
+
+    _this.setAttributes(attributes);
     return _this;
   }
 

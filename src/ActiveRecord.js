@@ -40,25 +40,21 @@ function defaultPathForId(cls) {
 
 // TODO: remove options from all methods if not used
 class ActiveRecord extends Model {
-  // TODO: fix this constructor to define all the extra properties first
-  // then call setAttributes (from super) later
-  // Right now, it calls setAttributes twice
   constructor(attributes = {}) {
-    super(attributes);
+    // do not pass attributes to super because we need to build other properties
+    // for ActiveRecord
+    super();
 
-    // set primary key if available
+    // Build primaryKey
     let pk = this.getClass().getPrimaryKey();
     ActiveRecord.defineProperty(this, pk);
-    this.setPrimaryKeyValue(attributes[pk]);
 
-    // set foreign keys
+    // Build foreignKeys
     let foreignKeys = this.getClass().getForeignKeys();
     _.each(foreignKeys, (key) => {
       ActiveRecord.defineProperty(this, key);
     });
-    this.setForeignAttributes(attributes);
 
-    // set relations
     // relations are stored differently than normal attributes
     this._relations = {};
     var instance = this;
@@ -74,7 +70,8 @@ class ActiveRecord extends Model {
         }
       });
     });
-    this.setRelationAttributes(attributes);
+
+    this.setAttributes(attributes);
   }
 
   static getPrimaryKey() {
