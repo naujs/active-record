@@ -398,12 +398,21 @@ class ActiveRecord extends Model {
   }
 
   // API stuff
-  static api(name, definition, handler) {
+  static api(nameOrApi, definition, handler) {
     this._api = this._api || [];
+    var name = nameOrApi;
+    if (nameOrApi instanceof Api) {
+      name = nameOrApi.getName();
+      definition = nameOrApi.getDefinition();
+      handler = nameOrApi.getHandler();
+    }
 
     var api = this.getApi(name);
 
-    if (!api) {
+    if (api) {
+      api.setHandler(handler.bind(this));
+      api.setDefinition(definition);
+    } else {
       api = new Api(name, definition, handler);
       this._api.push(api);
     }
@@ -502,5 +511,7 @@ class ActiveRecord extends Model {
     }
   }
 }
+
+ActiveRecord.Api = Api;
 
 module.exports = ActiveRecord;

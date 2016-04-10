@@ -22,6 +22,21 @@ var Api = (function () {
   }
 
   _createClass(Api, [{
+    key: 'getPath',
+    value: function getPath() {
+      return this._definition.path;
+    }
+  }, {
+    key: 'getArgs',
+    value: function getArgs() {
+      return _.clone(this._definition.args) || {};
+    }
+  }, {
+    key: 'getMethod',
+    value: function getMethod() {
+      return this._definition.method || this._definition.type;
+    }
+  }, {
     key: 'isEnabled',
     value: function isEnabled() {
       return this._enabled;
@@ -45,6 +60,21 @@ var Api = (function () {
     key: 'setHandler',
     value: function setHandler(fn) {
       this._handler = fn;
+    }
+  }, {
+    key: 'getHandler',
+    value: function getHandler() {
+      return this._handler;
+    }
+  }, {
+    key: 'setDefinition',
+    value: function setDefinition(definition) {
+      this._definition = definition;
+    }
+  }, {
+    key: 'getDefinition',
+    value: function getDefinition() {
+      return this._definition;
     }
   }, {
     key: 'before',

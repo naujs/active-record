@@ -13,6 +13,18 @@ class Api {
     this.enable();
   }
 
+  getPath() {
+    return this._definition.path;
+  }
+
+  getArgs() {
+    return _.clone(this._definition.args) || {};
+  }
+
+  getMethod() {
+    return this._definition.method || this._definition.type;
+  }
+
   isEnabled() {
     return this._enabled;
   }
@@ -31,6 +43,18 @@ class Api {
 
   setHandler(fn) {
     this._handler = fn;
+  }
+
+  getHandler() {
+    return this._handler;
+  }
+
+  setDefinition(definition) {
+    this._definition = definition;
+  }
+
+  getDefinition() {
+    return this._definition;
   }
 
   before(fn) {
