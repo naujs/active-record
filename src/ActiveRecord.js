@@ -4,7 +4,13 @@ var Model = require('@naujs/model')
   , Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria');
 
-var Api = require('./Api');
+var Api = require('./Api')
+  , ListApi = require('./api/ListApi')
+  , ReadApi = require('./api/ReadApi')
+  , CreateApi = require('./api/CreateApi')
+  , UpdateApi = require('./api/UpdateApi')
+  , DeleteApi = require('./api/DeleteApi')
+  , CountApi = require('./api/CountApi');
 
 var relationFunctions = {};
 _.each([
@@ -32,7 +38,22 @@ function defaultPathForId(cls) {
   return '/:' + cls.getPrimaryKey();
 }
 
+function setupDefaultOperations() {
+  return [
+    new ListApi(this),
+    new ReadApi(this),
+    new CreateApi(this),
+    new UpdateApi(this),
+    new DeleteApi(this),
+    new CountApi(this)
+  ];
+}
+
+// TODO: remove options from all methods if not used
 class ActiveRecord extends Model {
+  // TODO: fix this constructor to define all the extra properties first
+  // then call setAttributes (from super) later
+  // Right now, it calls setAttributes twice
   constructor(attributes = {}) {
     super(attributes);
 
@@ -239,6 +260,20 @@ class ActiveRecord extends Model {
     });
   }
 
+  static deleteByPk(pk) {
+    var filter = {};
+    filter.where = {};
+    var primaryKey = this.getPrimaryKey();
+    filter.where[primaryKey] = pk;
+
+    return deleteOne(filter);
+  }
+
+  static count(filter) {
+    let criteria = new DbCriteria(this, filter);
+    return this.getConnector().count(criteria);
+  }
+
   create(options = {}) {
     if (!this.isNew()) {
       return Promise.reject('Can only create new models');
@@ -382,13 +417,51 @@ class ActiveRecord extends Model {
     });
   }
 
-  static disableApi(name, disabled) {
+  static getApiOrUseDefault(name) {
     var api = this.getApi(name);
-    return api.disable();
+
+    if (!api) {
+      api = this.getDefaultApi(name);
+    }
+
+    return api;
+  }
+
+  static setupDefaultApi() {
+    this._defaultApi = [];
+    this._defaultApi = this._defaultApi.concat(setupDefaultOperations.call(this));
+  }
+
+  static getDefaultApi(name) {
+    if (!this._defaultApi) this.setupDefaultApi();
+
+    return _.find(this._defaultApi, function(api) {
+      return api.getName() === name;
+    });
+  }
+
+  static getAllApi() {
+    var allApi = {};
+
+    if (!this._defaultApi) this.setupDefaultApi();
+
+    _.each(this._defaultApi.concat(this._api), (api) => {
+      allApi[api.getName()] = api;
+    });
+
+    return _.values(allApi);
+  }
+
+  static disableApi(name) {
+    var api = this.getApiOrUseDefault(name);
+
+    if (api) {
+      return api.disable();
+    }
   }
 
   static handleApi(name, fn) {
-    var api = this.getApi(name);
+    var api = this.getApiOrUseDefault(name);
 
     if (!api) {
       throw `API ${name} is not defined`;
@@ -398,7 +471,7 @@ class ActiveRecord extends Model {
   }
 
   static callApi(name, args, ctx) {
-    var api = this.getApi(name);
+    var api = this.getApiOrUseDefault(name);
 
     if (!api) {
       let error = new Error(`API "${name}" is not found`);
@@ -414,7 +487,7 @@ class ActiveRecord extends Model {
   }
 
   static beforeApi(name, fn) {
-    var api = this.getApi(name);
+    var api = this.getApiOrUseDefault(name);
 
     if (api) {
       api.before(fn);
@@ -422,7 +495,7 @@ class ActiveRecord extends Model {
   }
 
   static afterApi(name, fn) {
-    var api = this.getApi(name);
+    var api = this.getApiOrUseDefault(name);
 
     if (api) {
       api.after(fn);

@@ -894,7 +894,7 @@ describe('ActiveRecord', () => {
 
   describe('API', () => {
     beforeEach(() => {
-      Store.api('list', {
+      Store.api('test', {
         path: '/',
         method: 'GET',
         args: {
@@ -909,8 +909,12 @@ describe('ActiveRecord', () => {
       });
     });
 
+    afterEach(() => {
+      Store.findAll.and.callThrough();
+    });
+
     it('should call correct handler', () => {
-      return Store.callApi('list', {
+      return Store.callApi('test', {
         filter: {
           where: {
             name: 'Store 1'
@@ -923,6 +927,11 @@ describe('ActiveRecord', () => {
           }
         });
       });
+    });
+
+    it('should have default api', () => {
+      var api = Store.getAllApi();
+      expect(api.length).toEqual(7);
     });
   });
 });

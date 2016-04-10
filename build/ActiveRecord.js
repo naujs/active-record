@@ -16,7 +16,13 @@ var Model = require('@naujs/model'),
     Registry = require('@naujs/registry'),
     DbCriteria = require('@naujs/db-criteria');
 
-var Api = require('./Api');
+var Api = require('./Api'),
+    ListApi = require('./api/ListApi'),
+    ReadApi = require('./api/ReadApi'),
+    CreateApi = require('./api/CreateApi'),
+    UpdateApi = require('./api/UpdateApi'),
+    DeleteApi = require('./api/DeleteApi'),
+    CountApi = require('./api/CountApi');
 
 var relationFunctions = {};
 _.each(['belongsTo', 'hasOne', 'hasMany', 'hasManyAndBelongsTo'], function (name) {
@@ -39,8 +45,18 @@ function defaultPathForId(cls) {
   return '/:' + cls.getPrimaryKey();
 }
 
+function setupDefaultOperations() {
+  return [new ListApi(this), new ReadApi(this), new CreateApi(this), new UpdateApi(this), new DeleteApi(this), new CountApi(this)];
+}
+
+// TODO: remove options from all methods if not used
+
 var ActiveRecord = (function (_Model) {
   _inherits(ActiveRecord, _Model);
+
+  // TODO: fix this constructor to define all the extra properties first
+  // then call setAttributes (from super) later
+  // Right now, it calls setAttributes twice
 
   function ActiveRecord() {
     var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
@@ -449,6 +465,22 @@ var ActiveRecord = (function (_Model) {
       });
     }
   }, {
+    key: 'deleteByPk',
+    value: function deleteByPk(pk) {
+      var filter = {};
+      filter.where = {};
+      var primaryKey = this.getPrimaryKey();
+      filter.where[primaryKey] = pk;
+
+      return deleteOne(filter);
+    }
+  }, {
+    key: 'count',
+    value: function count(filter) {
+      var criteria = new DbCriteria(this, filter);
+      return this.getConnector().count(criteria);
+    }
+  }, {
     key: 'getRelations',
     value: function getRelations() {
       return _.clone(this.relations) || {};
@@ -475,15 +507,57 @@ var ActiveRecord = (function (_Model) {
       });
     }
   }, {
-    key: 'disableApi',
-    value: function disableApi(name, disabled) {
+    key: 'getApiOrUseDefault',
+    value: function getApiOrUseDefault(name) {
       var api = this.getApi(name);
-      return api.disable();
+
+      if (!api) {
+        api = this.getDefaultApi(name);
+      }
+
+      return api;
+    }
+  }, {
+    key: 'setupDefaultApi',
+    value: function setupDefaultApi() {
+      this._defaultApi = [];
+      this._defaultApi = this._defaultApi.concat(setupDefaultOperations.call(this));
+    }
+  }, {
+    key: 'getDefaultApi',
+    value: function getDefaultApi(name) {
+      if (!this._defaultApi) this.setupDefaultApi();
+
+      return _.find(this._defaultApi, function (api) {
+        return api.getName() === name;
+      });
+    }
+  }, {
+    key: 'getAllApi',
+    value: function getAllApi() {
+      var allApi = {};
+
+      if (!this._defaultApi) this.setupDefaultApi();
+
+      _.each(this._defaultApi.concat(this._api), function (api) {
+        allApi[api.getName()] = api;
+      });
+
+      return _.values(allApi);
+    }
+  }, {
+    key: 'disableApi',
+    value: function disableApi(name) {
+      var api = this.getApiOrUseDefault(name);
+
+      if (api) {
+        return api.disable();
+      }
     }
   }, {
     key: 'handleApi',
     value: function handleApi(name, fn) {
-      var api = this.getApi(name);
+      var api = this.getApiOrUseDefault(name);
 
       if (!api) {
         throw 'API ' + name + ' is not defined';
@@ -494,7 +568,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'callApi',
     value: function callApi(name, args, ctx) {
-      var api = this.getApi(name);
+      var api = this.getApiOrUseDefault(name);
 
       if (!api) {
         var error = new Error('API "' + name + '" is not found');
@@ -512,7 +586,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'beforeApi',
     value: function beforeApi(name, fn) {
-      var api = this.getApi(name);
+      var api = this.getApiOrUseDefault(name);
 
       if (api) {
         api.before(fn);
@@ -521,7 +595,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'afterApi',
     value: function afterApi(name, fn) {
-      var api = this.getApi(name);
+      var api = this.getApiOrUseDefault(name);
 
       if (api) {
         api.after(fn);
