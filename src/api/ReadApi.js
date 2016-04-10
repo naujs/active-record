@@ -7,10 +7,12 @@ class ReadApi extends Api {
     super('read', {
       path: helpers.generatePathWithPk(cls),
       method: 'GET',
-      args: helpers.generateArgsWithPk(cls)
+      args: helpers.generateArgsWithPk(cls, {
+        filter: 'object'
+      })
     }, (args, ctx) => {
       var primaryKey = cls.getPrimaryKey();
-      return cls.findByPk(args[primaryKey]).then((result) => {
+      return cls.findByPk(args[primaryKey], args.filter).then((result) => {
         if (!result) {
           let error = new Error(`${this.getModelName()} not found`);
           error.httpCode = error.code = 404;

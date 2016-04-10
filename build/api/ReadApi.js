@@ -21,10 +21,12 @@ var ReadApi = (function (_Api) {
     return _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
       path: helpers.generatePathWithPk(cls),
       method: 'GET',
-      args: helpers.generateArgsWithPk(cls)
+      args: helpers.generateArgsWithPk(cls, {
+        filter: 'object'
+      })
     }, function (args, ctx) {
       var primaryKey = cls.getPrimaryKey();
-      return cls.findByPk(args[primaryKey]).then(function (result) {
+      return cls.findByPk(args[primaryKey], args.filter).then(function (result) {
         if (!result) {
           var error = new Error(_this.getModelName() + ' not found');
           error.httpCode = error.code = 404;

@@ -412,14 +412,13 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'findByPk',
     value: function findByPk(value) {
-      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+      var filter = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
       var pk = this.getPrimaryKey();
-      var where = {};
-      where[pk] = value;
-      return this.findOne({
-        where: where
-      }, options);
+      filter.where = {};
+      filter.where[pk] = value;
+
+      return this.findOne(filter);
     }
   }, {
     key: 'deleteAll',

@@ -17,10 +17,11 @@ describe('ReadApi', () => {
 
   it('should call .findByPk', () => {
     return api.execute({
-      id: 1
+      id: 1,
+      filter: {}
     }, {}).then((result) => {
       expect(result).toEqual({});
-      expect(Store.findByPk).toHaveBeenCalledWith(1);
+      expect(Store.findByPk).toHaveBeenCalledWith(1, {});
     });
   });
 });

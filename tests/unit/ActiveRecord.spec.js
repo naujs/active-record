@@ -179,16 +179,18 @@ describe('ActiveRecord', () => {
     });
 
     it('should call #findOne with correct filter', () => {
-      var options = {
-        random: 'stuff'
-      };
-
-      return Store.findByPk(1, options).then(() => {
+      return Store.findByPk(1, {
+        where: {
+          name: 'Test'
+        },
+        include: 'owner'
+      }).then(() => {
         expect(Store.findOne).toHaveBeenCalledWith({
           where: {
             'id': 1
-          }
-        }, options);
+          },
+          include: 'owner'
+        });
       });
     });
 

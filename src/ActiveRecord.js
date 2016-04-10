@@ -214,13 +214,12 @@ class ActiveRecord extends Model {
     });
   }
 
-  static findByPk(value, options = {}) {
-    let pk = this.getPrimaryKey();
-    let where = {};
-    where[pk] = value;
-    return this.findOne({
-      where: where
-    }, options);
+  static findByPk(value, filter = {}) {
+    var pk = this.getPrimaryKey();
+    filter.where = {};
+    filter.where[pk] = value;
+
+    return this.findOne(filter);
   }
 
   static deleteAll(filter, options = {}) {
