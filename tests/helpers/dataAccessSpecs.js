@@ -122,8 +122,14 @@ global.testDataAccessMethods = function() {
 
   describe('.findByPk', () => {
     it('should return instance matched the primary key', () => {
-      return Store.findByPk(1).then((store) => {
+      return Store.findByPk(1, {
+        include: 'owner'
+      }).then((store) => {
         expect(store.name).toEqual('Store 1');
+        expect(store.owner().toJSON()).toEqual({
+          name: 'User 1',
+          id: 1
+        });
       });
     });
   });
