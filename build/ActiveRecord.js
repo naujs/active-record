@@ -45,10 +45,6 @@ function defaultPathForId(cls) {
   return '/:' + cls.getPrimaryKey();
 }
 
-function setupDefaultOperations() {
-  return [new ListApi(this), new ReadApi(this), new CreateApi(this), new UpdateApi(this), new DeleteApi(this), new CountApi(this)];
-}
-
 // TODO: remove options from all methods if not used
 
 var ActiveRecord = (function (_Model) {
@@ -336,9 +332,6 @@ var ActiveRecord = (function (_Model) {
     value: function getRelations() {
       return this.getClass().getRelations();
     }
-
-    // API stuff
-
   }], [{
     key: 'getPrimaryKey',
     value: function getPrimaryKey() {
@@ -485,136 +478,20 @@ var ActiveRecord = (function (_Model) {
     value: function getRelations() {
       return _.clone(this.relations) || {};
     }
-  }, {
-    key: 'api',
-    value: function api(nameOrApi, definition, handler) {
-      this._api = this._api || [];
-      var name = nameOrApi;
-      if (nameOrApi instanceof Api) {
-        name = nameOrApi.getName();
-        definition = nameOrApi.getDefinition();
-        handler = nameOrApi.getHandler();
-      }
-
-      var api = this.getApi(name);
-
-      if (api) {
-        api.setHandler(handler.bind(this));
-        api.setDefinition(definition);
-      } else {
-        api = new Api(name, definition, handler);
-        this._api.push(api);
-      }
-
-      return api;
-    }
-  }, {
-    key: 'getApi',
-    value: function getApi(name) {
-      return _.find(this._api, function (api) {
-        return api.getName() === name;
-      });
-    }
-  }, {
-    key: 'getApiOrUseDefault',
-    value: function getApiOrUseDefault(name) {
-      var api = this.getApi(name);
-
-      if (!api) {
-        api = this.getDefaultApi(name);
-      }
-
-      return api;
-    }
-  }, {
-    key: 'setupDefaultApi',
-    value: function setupDefaultApi() {
-      this._defaultApi = [];
-      this._defaultApi = this._defaultApi.concat(setupDefaultOperations.call(this));
-    }
-  }, {
-    key: 'getDefaultApi',
-    value: function getDefaultApi(name) {
-      if (!this._defaultApi) this.setupDefaultApi();
-
-      return _.find(this._defaultApi, function (api) {
-        return api.getName() === name;
-      });
-    }
-  }, {
-    key: 'getAllApi',
-    value: function getAllApi() {
-      var allApi = {};
-
-      if (!this._defaultApi) this.setupDefaultApi();
-
-      _.each(this._defaultApi.concat(this._api), function (api) {
-        allApi[api.getName()] = api;
-      });
-
-      return _.values(allApi);
-    }
-  }, {
-    key: 'disableApi',
-    value: function disableApi(name) {
-      var api = this.getApiOrUseDefault(name);
-
-      if (api) {
-        return api.disable();
-      }
-    }
-  }, {
-    key: 'handleApi',
-    value: function handleApi(name, fn) {
-      var api = this.getApiOrUseDefault(name);
-
-      if (!api) {
-        throw 'API ' + name + ' is not defined';
-      }
-
-      api.setHandler(fn.bind(this));
-    }
-  }, {
-    key: 'callApi',
-    value: function callApi(name, args, ctx) {
-      var api = this.getApiOrUseDefault(name);
-
-      if (!api) {
-        var error = new Error('API "' + name + '" is not found');
-        error.httpCode = error.code = 500;
-        return Promise.reject(error);
-      }
-
-      return api.execute(args, ctx);
-    }
-  }, {
-    key: 'getApiName',
-    value: function getApiName() {
-      return this.getPluralName();
-    }
-  }, {
-    key: 'beforeApi',
-    value: function beforeApi(name, fn) {
-      var api = this.getApiOrUseDefault(name);
-
-      if (api) {
-        api.before(fn);
-      }
-    }
-  }, {
-    key: 'afterApi',
-    value: function afterApi(name, fn) {
-      var api = this.getApiOrUseDefault(name);
-
-      if (api) {
-        api.after(fn);
-      }
-    }
   }]);
 
   return ActiveRecord;
 })(Model);
 
 ActiveRecord.Api = Api;
+
+ActiveRecord.mixin({}, Api.buildMixin({
+  defaultApi: function defaultApi() {
+    return [new ListApi(this), new ReadApi(this), new CreateApi(this), new UpdateApi(this), new DeleteApi(this), new CountApi(this)];
+  },
+  apiName: function apiName() {
+    return this.getPluralName();
+  }
+}));
 
 module.exports = ActiveRecord;

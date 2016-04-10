@@ -38,17 +38,6 @@ function defaultPathForId(cls) {
   return '/:' + cls.getPrimaryKey();
 }
 
-function setupDefaultOperations() {
-  return [
-    new ListApi(this),
-    new ReadApi(this),
-    new CreateApi(this),
-    new UpdateApi(this),
-    new DeleteApi(this),
-    new CountApi(this)
-  ];
-}
-
 // TODO: remove options from all methods if not used
 class ActiveRecord extends Model {
   // TODO: fix this constructor to define all the extra properties first
@@ -396,122 +385,24 @@ class ActiveRecord extends Model {
   getRelations() {
     return this.getClass().getRelations();
   }
-
-  // API stuff
-  static api(nameOrApi, definition, handler) {
-    this._api = this._api || [];
-    var name = nameOrApi;
-    if (nameOrApi instanceof Api) {
-      name = nameOrApi.getName();
-      definition = nameOrApi.getDefinition();
-      handler = nameOrApi.getHandler();
-    }
-
-    var api = this.getApi(name);
-
-    if (api) {
-      api.setHandler(handler.bind(this));
-      api.setDefinition(definition);
-    } else {
-      api = new Api(name, definition, handler);
-      this._api.push(api);
-    }
-
-    return api;
-  }
-
-  static getApi(name) {
-    return _.find(this._api, function(api) {
-      return api.getName() === name;
-    });
-  }
-
-  static getApiOrUseDefault(name) {
-    var api = this.getApi(name);
-
-    if (!api) {
-      api = this.getDefaultApi(name);
-    }
-
-    return api;
-  }
-
-  static setupDefaultApi() {
-    this._defaultApi = [];
-    this._defaultApi = this._defaultApi.concat(setupDefaultOperations.call(this));
-  }
-
-  static getDefaultApi(name) {
-    if (!this._defaultApi) this.setupDefaultApi();
-
-    return _.find(this._defaultApi, function(api) {
-      return api.getName() === name;
-    });
-  }
-
-  static getAllApi() {
-    var allApi = {};
-
-    if (!this._defaultApi) this.setupDefaultApi();
-
-    _.each(this._defaultApi.concat(this._api), (api) => {
-      allApi[api.getName()] = api;
-    });
-
-    return _.values(allApi);
-  }
-
-  static disableApi(name) {
-    var api = this.getApiOrUseDefault(name);
-
-    if (api) {
-      return api.disable();
-    }
-  }
-
-  static handleApi(name, fn) {
-    var api = this.getApiOrUseDefault(name);
-
-    if (!api) {
-      throw `API ${name} is not defined`;
-    }
-
-    api.setHandler(fn.bind(this));
-  }
-
-  static callApi(name, args, ctx) {
-    var api = this.getApiOrUseDefault(name);
-
-    if (!api) {
-      let error = new Error(`API "${name}" is not found`);
-      error.httpCode = error.code = 500;
-      return Promise.reject(error);
-    }
-
-    return api.execute(args, ctx);
-  }
-
-  static getApiName() {
-    return this.getPluralName();
-  }
-
-  static beforeApi(name, fn) {
-    var api = this.getApiOrUseDefault(name);
-
-    if (api) {
-      api.before(fn);
-    }
-  }
-
-  static afterApi(name, fn) {
-    var api = this.getApiOrUseDefault(name);
-
-    if (api) {
-      api.after(fn);
-    }
-  }
 }
 
 ActiveRecord.Api = Api;
+
+ActiveRecord.mixin({}, Api.buildMixin({
+  defaultApi: function() {
+    return [
+      new ListApi(this),
+      new ReadApi(this),
+      new CreateApi(this),
+      new UpdateApi(this),
+      new DeleteApi(this),
+      new CountApi(this)
+    ];
+  },
+  apiName: function() {
+    return this.getPluralName();
+  }
+}));
 
 module.exports = ActiveRecord;
