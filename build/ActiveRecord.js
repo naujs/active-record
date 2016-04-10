@@ -16,6 +16,8 @@ var Model = require('@naujs/model'),
     Registry = require('@naujs/registry'),
     DbCriteria = require('@naujs/db-criteria');
 
+var Api = require('./Api');
+
 var relationFunctions = {};
 _.each(['belongsTo', 'hasOne', 'hasMany', 'hasManyAndBelongsTo'], function (name) {
   var capitalized = name.charAt(0).toUpperCase() + name.substr(1);
@@ -454,58 +456,53 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'api',
     value: function api(name, definition, handler) {
-      this._api = this._api || {};
-      this._api[name] = this._api[name] || {};
-      this._api[name].definition = definition;
+      this._api = this._api || [];
 
-      if (handler) {
-        this.handleApi(name, handler);
+      var api = this.getApi(name);
+
+      if (!api) {
+        api = new Api(name, definition, handler);
+        this._api.push(api);
       }
+
+      return api;
+    }
+  }, {
+    key: 'getApi',
+    value: function getApi(name) {
+      return _.find(this._api, function (api) {
+        return api.getName() === name;
+      });
     }
   }, {
     key: 'disableApi',
     value: function disableApi(name, disabled) {
-      this._api = this._api || {};
-      if (this._api[name]) {
-        this._api[name].disabled = !!disabled;
-      }
+      var api = this.getApi(name);
+      return api.disable();
     }
   }, {
     key: 'handleApi',
     value: function handleApi(name, fn) {
-      this._api = this._api || {};
-      this._api[name] = this._api[name] || {};
-      this._api[name].handler = fn.bind(this);
+      var api = this.getApi(name);
+
+      if (!api) {
+        throw 'API ' + name + ' is not defined';
+      }
+
+      api.setHandler(fn.bind(this));
     }
   }, {
     key: 'callApi',
     value: function callApi(name, args, ctx) {
-      var _this11 = this;
+      var api = this.getApi(name);
 
-      this._api = this._api || {};
-      var api = this._api[name];
-
-      if (!api || api.disabled || !api.definition) {
+      if (!api) {
         var error = new Error('API "' + name + '" is not found');
         error.httpCode = error.code = 500;
         return Promise.reject(error);
       }
 
-      var handler = api.handler;
-
-      if (!handler || !_.isFunction(handler)) {
-        var error = new Error('API "' + name + '" is not usable');
-        error.httpCode = error.code = 500;
-        return Promise.reject(error);
-      }
-
-      return this.runHook('api:before:' + name, args, ctx).then(function () {
-        return handler(args, ctx);
-      }).then(function (result) {
-        return _this11.runHook('api:after:' + name, result, args, ctx).then(function () {
-          return result;
-        });
-      });
+      return api.execute(args, ctx);
     }
   }, {
     key: 'getApiName',
@@ -515,12 +512,20 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'beforeApi',
     value: function beforeApi(name, fn) {
-      this.watch('api:after:' + name, fn);
+      var api = this.getApi(name);
+
+      if (api) {
+        api.before(fn);
+      }
     }
   }, {
     key: 'afterApi',
     value: function afterApi(name, fn) {
-      this.watch('api:before:' + name, fn);
+      var api = this.getApi(name);
+
+      if (api) {
+        api.after(fn);
+      }
     }
   }]);
 
