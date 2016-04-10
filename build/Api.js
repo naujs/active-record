@@ -22,6 +22,11 @@ var Api = (function () {
   }
 
   _createClass(Api, [{
+    key: 'isEnabled',
+    value: function isEnabled() {
+      return this._enabled;
+    }
+  }, {
     key: 'disable',
     value: function disable() {
       this._enabled = false;

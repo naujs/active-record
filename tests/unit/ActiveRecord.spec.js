@@ -933,5 +933,15 @@ describe('ActiveRecord', () => {
       var api = Store.getAllApi();
       expect(api.length).toEqual(7);
     });
+
+    it('should allow to disable default api', () => {
+      Store.disableApi('list');
+
+      var api = _.find(Store.getAllApi(), (api) => {
+        return api.getName() === 'list';
+      });
+
+      expect(api.isEnabled()).toEqual(false);
+    });
   });
 });

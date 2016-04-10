@@ -13,6 +13,10 @@ class Api {
     this.enable();
   }
 
+  isEnabled() {
+    return this._enabled;
+  }
+
   disable() {
     this._enabled = false;
   }
