@@ -47,12 +47,12 @@ class ActiveRecord extends Model {
 
     // Build primaryKey
     let pk = this.getClass().getPrimaryKey();
-    ActiveRecord.defineProperty(this, pk);
+    ActiveRecord.defineProperty(this, pk, 'any');
 
     // Build foreignKeys
     let foreignKeys = this.getClass().getForeignKeys();
     _.each(foreignKeys, (key) => {
-      ActiveRecord.defineProperty(this, key);
+      ActiveRecord.defineProperty(this, key, 'any');
     });
 
     // relations are stored differently than normal attributes

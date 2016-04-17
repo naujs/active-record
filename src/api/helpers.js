@@ -28,8 +28,8 @@ module.exports = {
 
     _.each(properties, (options, name) => {
       args[name] = {
-        type: options.type ? options.type.toJSON() : 'any',
-        required: options.rules ? !!options.rules : false
+        type: options.type,
+        required: !!options.required
       };
     });
 

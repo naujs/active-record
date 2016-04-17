@@ -62,12 +62,12 @@ var ActiveRecord = (function (_Model) {
     // for ActiveRecord
 
     var pk = _this.getClass().getPrimaryKey();
-    ActiveRecord.defineProperty(_this, pk);
+    ActiveRecord.defineProperty(_this, pk, 'any');
 
     // Build foreignKeys
     var foreignKeys = _this.getClass().getForeignKeys();
     _.each(foreignKeys, function (key) {
-      ActiveRecord.defineProperty(_this, key);
+      ActiveRecord.defineProperty(_this, key, 'any');
     });
 
     // relations are stored differently than normal attributes

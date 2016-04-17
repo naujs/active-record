@@ -18,7 +18,19 @@ class Api {
   }
 
   getArgs() {
-    return _.clone(this._definition.args) || {};
+    if (!this._args) {
+      var args = {};
+      _.each(this._definition.args, (options, name) => {
+        if (_.isString(options)) {
+          args[name] = {};
+          args[name].type = options;
+        } else if (_.isObject(options)) {
+          args[name] = options;
+        }
+      });
+      this._args = args;
+    }
+    return this._args;
   }
 
   getMethod() {
@@ -51,6 +63,7 @@ class Api {
 
   setDefinition(definition) {
     this._definition = definition;
+    delete this._args;
   }
 
   getDefinition() {
