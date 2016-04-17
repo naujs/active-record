@@ -27,10 +27,6 @@ describe('api/helpers', () => {
           type: 'string',
           required: true
         },
-        displayName: {
-          type: 'string',
-          required: false
-        },
         user_id: 'any'
       });
     });

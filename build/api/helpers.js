@@ -37,10 +37,15 @@ module.exports = {
     var args = {};
 
     _.each(properties, function (options, name) {
-      args[name] = {
-        type: options.type,
-        required: !!options.required
-      };
+      if (options.persistable === false) return;
+
+      if (_.isString(options)) {
+        options = {
+          type: options
+        };
+      }
+
+      args[name] = options;
     });
 
     _.each(cls.getForeignKeys(), function (name) {
