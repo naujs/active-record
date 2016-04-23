@@ -437,12 +437,12 @@ ActiveRecord.Api = Api;
 ActiveRecord.mixin({}, Api.buildMixin({
   defaultApi: function() {
     return [
+      new CountApi(this),
       new ListApi(this),
       new ReadApi(this),
       new CreateApi(this),
       new UpdateApi(this),
-      new DeleteApi(this),
-      new CountApi(this)
+      new DeleteApi(this)
     ];
   },
   apiName: function() {

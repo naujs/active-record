@@ -221,7 +221,7 @@ Api.buildMixin = function () {
 
       if (!this._defaultApi) this.setupDefaultApi();
 
-      _.each(this._defaultApi.concat(this._api || []), function (api) {
+      _.each((this._api || []).concat(this._defaultApi), function (api) {
         allApi[api.getName()] = api;
       });
 
