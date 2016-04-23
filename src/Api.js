@@ -34,7 +34,7 @@ class Api {
   }
 
   getMethod() {
-    return this._definition.method || this._definition.type;
+    return this._definition.method || this._definition.type || 'get';
   }
 
   isEnabled() {
@@ -196,6 +196,18 @@ Api.buildMixin = function(options = {}) {
       if (api) {
         return api.disable();
       }
+    },
+
+    setAccess: function(name, access) {
+      var api = this.getApiOrUseDefault(name);
+
+      if (!api) {
+        throw `API ${name} is not defined`;
+      }
+
+      var definition = api.getDefinition() || {};
+      definition.access = access;
+      api.setDefinition(definition);
     },
 
     handleApi: function(name, fn) {
