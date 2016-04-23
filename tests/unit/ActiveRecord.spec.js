@@ -369,7 +369,7 @@ describe('ActiveRecord', () => {
       });
 
       spyOn(instance, 'validate').and.callFake(() => {
-        return Promise.resolve(false);
+        return Promise.resolve({});
       });
 
       return instance.create().then(() => {
@@ -518,7 +518,7 @@ describe('ActiveRecord', () => {
       });
 
       spyOn(instance, 'validate').and.callFake(() => {
-        return Promise.resolve(false);
+        return Promise.resolve({});
       });
 
       return instance.update().then(() => {
@@ -605,14 +605,14 @@ describe('ActiveRecord', () => {
       });
     });
 
-    it('should return false if validation fails', () => {
+    it('should return errors if validation fails', () => {
       var instance = new Store();
       connector.create.and.callFake(() => {
         return Promise.resolve(instance);
       });
 
       spyOn(instance, 'validate').and.callFake(() => {
-        return Promise.resolve(false);
+        return Promise.resolve({});
       });
 
       return instance.save().then((result) => {

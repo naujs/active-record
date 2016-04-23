@@ -207,14 +207,18 @@ var ActiveRecord = (function (_Model) {
         return Promise.reject('Can only create new models');
       }
 
-      return this.validate().then(function (result) {
-        if (!result) {
+      return this.validate().then(function (errors) {
+        if (errors) {
           return false;
         }
 
         return _this6.runHook('beforeCreate', {
           instance: _this6
-        }).then(function () {
+        }).then(function (result) {
+          if (!result) {
+            return false;
+          }
+
           var attributes = _this6.getPersistableAttributes();
           var criteria = new DbCriteria(_this6, {});
 
@@ -240,8 +244,8 @@ var ActiveRecord = (function (_Model) {
         return Promise.reject('Cannot update new model');
       }
 
-      return this.validate().then(function (result) {
-        if (!result) {
+      return this.validate().then(function (errors) {
+        if (errors) {
           return false;
         }
 
@@ -285,7 +289,8 @@ var ActiveRecord = (function (_Model) {
 
       return this.runHook('beforeSave', {
         instance: this
-      }).then(function () {
+      }).then(function (result) {
+        if (!result) return false;
         return _this8[method].call(_this8);
       }).then(function (result) {
         if (result === false) return false;

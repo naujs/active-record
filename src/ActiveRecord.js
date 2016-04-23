@@ -274,14 +274,18 @@ class ActiveRecord extends Model {
       return Promise.reject('Can only create new models');
     }
 
-    return this.validate().then((result) => {
-      if (!result) {
+    return this.validate().then((errors) => {
+      if (errors) {
         return false;
       }
 
       return this.runHook('beforeCreate', {
         instance: this
-      }).then(() => {
+      }).then((result) => {
+        if (!result) {
+          return false;
+        }
+
         let attributes = this.getPersistableAttributes();
         let criteria = new DbCriteria(this, {});
 
@@ -304,8 +308,8 @@ class ActiveRecord extends Model {
       return Promise.reject('Cannot update new model');
     }
 
-    return this.validate().then((result) => {
-      if (!result) {
+    return this.validate().then((errors) => {
+      if (errors) {
         return false;
       }
 
@@ -346,7 +350,8 @@ class ActiveRecord extends Model {
 
     return this.runHook('beforeSave', {
       instance: this
-    }).then(() => {
+    }).then((result) => {
+      if (!result) return false;
       return this[method].call(this);
     }).then((result) => {
       if (result === false) return false;
