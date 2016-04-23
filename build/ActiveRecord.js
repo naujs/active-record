@@ -13,8 +13,10 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 /**
  * Global registry values
  */
-var PRIMARY_KEY_TYPE = 'ActiveRecord.primaryKeyType';
-var FOREIGN_KEY_TYPE = 'ActiveRecord.foreignKeyType';
+var PREFIX = 'ActiveRecord';
+var PRIMARY_KEY_TYPE = PREFIX + '.primaryKeyType';
+var FOREIGN_KEY_TYPE = PREFIX + '.foreignKeyType';
+var CONNECTOR = PREFIX + '.connector';
 
 var Model = require('@naujs/model'),
     _ = require('lodash'),
@@ -346,6 +348,9 @@ var ActiveRecord = (function (_Model) {
     value: function getRelations() {
       return this.getClass().getRelations();
     }
+
+    // Methods to set global configuration for ActiveRecord
+
   }], [{
     key: 'getPrimaryKey',
     value: function getPrimaryKey() {
@@ -389,7 +394,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'getConnector',
     value: function getConnector() {
-      var connector = this.connector || Registry.getInstance().get('ActiveRecord.connector');
+      var connector = this.connector || Registry.getInstance().get(CONNECTOR);
       if (!connector) {
         throw 'Must have connector';
       }
@@ -491,6 +496,21 @@ var ActiveRecord = (function (_Model) {
     key: 'getRelations',
     value: function getRelations() {
       return _.clone(this.relations) || {};
+    }
+  }, {
+    key: 'setConnector',
+    value: function setConnector(connector) {
+      Registry.getInstance().set(CONNECTOR, connector);
+    }
+  }, {
+    key: 'setPrimaryKeyType',
+    value: function setPrimaryKeyType(type) {
+      Registry.getInstance().set(PRIMARY_KEY_TYPE, type);
+    }
+  }, {
+    key: 'setForeignKeyType',
+    value: function setForeignKeyType(type) {
+      Registry.getInstance().set(FOREIGN_KEY_TYPE, type);
     }
   }]);
 

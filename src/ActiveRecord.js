@@ -1,8 +1,10 @@
 /**
  * Global registry values
  */
-const PRIMARY_KEY_TYPE = 'ActiveRecord.primaryKeyType';
-const FOREIGN_KEY_TYPE = 'ActiveRecord.foreignKeyType';
+const PREFIX = 'ActiveRecord';
+const PRIMARY_KEY_TYPE = `${PREFIX}.primaryKeyType`;
+const FOREIGN_KEY_TYPE = `${PREFIX}.foreignKeyType`;
+const CONNECTOR = `${PREFIX}.connector`;
 
 var Model = require('@naujs/model')
   , _ = require('lodash')
@@ -200,7 +202,7 @@ class ActiveRecord extends Model {
 
   // Data management methods
   static getConnector() {
-    var connector = this.connector || Registry.getInstance().get('ActiveRecord.connector');
+    var connector = this.connector || Registry.getInstance().get(CONNECTOR);
     if (!connector) {
       throw 'Must have connector';
     }
@@ -414,6 +416,19 @@ class ActiveRecord extends Model {
 
   getRelations() {
     return this.getClass().getRelations();
+  }
+
+  // Methods to set global configuration for ActiveRecord
+  static setConnector(connector) {
+    Registry.getInstance().set(CONNECTOR, connector);
+  }
+
+  static setPrimaryKeyType(type) {
+    Registry.getInstance().set(PRIMARY_KEY_TYPE, type);
+  }
+
+  static setForeignKeyType(type) {
+    Registry.getInstance().set(FOREIGN_KEY_TYPE, type);
   }
 }
 
