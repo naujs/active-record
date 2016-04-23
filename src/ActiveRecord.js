@@ -1,3 +1,9 @@
+/**
+ * Global registry values
+ */
+const PRIMARY_KEY_TYPE = 'ActiveRecord.primaryKeyType';
+const FOREIGN_KEY_TYPE = 'ActiveRecord.foreignKeyType';
+
 var Model = require('@naujs/model')
   , _ = require('lodash')
   , util = require('@naujs/util')
@@ -26,7 +32,7 @@ _.each([
 // Helper methods
 // Class-level
 function defaultArgsForId(cls) {
-  let args = {};
+  var args = {};
   args[cls.getPrimaryKey()] = {
     'type': cls.getPrimaryKeyType(),
     'required': true
@@ -46,13 +52,14 @@ class ActiveRecord extends Model {
     super();
 
     // Build primaryKey
-    let pk = this.getClass().getPrimaryKey();
-    ActiveRecord.defineProperty(this, pk, 'any');
+    var pk = this.getClass().getPrimaryKey();
+    ActiveRecord.defineProperty(this, pk, this.getClass().getPrimaryKeyType());
 
     // Build foreignKeys
-    let foreignKeys = this.getClass().getForeignKeys();
-    _.each(foreignKeys, (key) => {
-      ActiveRecord.defineProperty(this, key, 'any');
+    _.each(this.getRelations(), (relation, name) => {
+      if (relation.type === 'belongsTo') {
+        ActiveRecord.defineProperty(this, relation.foreignKey, this.getClass().getForeignKeyType(name));
+      }
     });
 
     // relations are stored differently than normal attributes
@@ -78,24 +85,34 @@ class ActiveRecord extends Model {
     return this.primaryKey || 'id';
   }
 
+  static getForeignKeyType(name) {
+    var relation = this.getRelations()[name];
+    if (!relation) throw `Relation ${name} not found`;
+    return relation.foreignKeyType
+            || Registry.getInstance().get(FOREIGN_KEY_TYPE)
+            || 'number';
+  }
+
   static getPrimaryKeyType() {
-    return this.primaryKeyType || 'number';
+    return Registry.getInstance().get(PRIMARY_KEY_TYPE)
+            || this.primaryKeyType
+            || 'number';
   }
 
   getPrimaryKeyValue() {
-    let pk = this.getClass().getPrimaryKey();
+    var pk = this.getClass().getPrimaryKey();
     return this[pk];
   }
 
   setPrimaryKeyValue(value) {
-    let pk = this.getClass().getPrimaryKey();
+    var pk = this.getClass().getPrimaryKey();
     this[pk] = value;
     return this;
   }
 
   setAttributes(attributes = {}) {
     super.setAttributes(attributes);
-    let pk = this.getClass().getPrimaryKey();
+    var pk = this.getClass().getPrimaryKey();
     this.setPrimaryKeyValue(attributes[pk]);
     this.setForeignAttributes(attributes);
     this.setRelationAttributes(attributes);
@@ -103,7 +120,7 @@ class ActiveRecord extends Model {
   }
 
   setForeignAttributes(attributes = {}) {
-    let foreignKeys = this.getClass().getForeignKeys();
+    var foreignKeys = this.getClass().getForeignKeys();
 
     _.each(foreignKeys, (key) => {
       if (attributes[key] !== void(0)) {
@@ -183,7 +200,7 @@ class ActiveRecord extends Model {
 
   // Data management methods
   static getConnector() {
-    let connector = this.connector || Registry.getInstance().get('ActiveRecord.connector');
+    var connector = this.connector || Registry.getInstance().get('ActiveRecord.connector');
     if (!connector) {
       throw 'Must have connector';
     }
@@ -211,7 +228,7 @@ class ActiveRecord extends Model {
         return [];
       }
 
-      let instances = _.map(results, (result) => {
+      var instances = _.map(results, (result) => {
         return new this(result);
       });
 
@@ -236,7 +253,7 @@ class ActiveRecord extends Model {
     return this.runHook('beforeDelete', {
       filter: filter
     }).then(() => {
-      let criteria = new DbCriteria(this, filter);
+      var criteria = new DbCriteria(this, filter);
       return this.getConnector().delete(criteria).then((results) => {
         return this.runHook('afterDelete', {
           filter: filter,
@@ -265,7 +282,7 @@ class ActiveRecord extends Model {
   }
 
   static count(filter) {
-    let criteria = new DbCriteria(this, filter);
+    var criteria = new DbCriteria(this, filter);
     return this.getConnector().count(criteria);
   }
 
@@ -286,8 +303,8 @@ class ActiveRecord extends Model {
           return false;
         }
 
-        let attributes = this.getPersistableAttributes();
-        let criteria = new DbCriteria(this, {});
+        var attributes = this.getPersistableAttributes();
+        var criteria = new DbCriteria(this, {});
 
         criteria.setAttributes(attributes);
         return this.getConnector().create(criteria).then((result) => {
@@ -320,13 +337,13 @@ class ActiveRecord extends Model {
           return false;
         }
 
-        let attributes = this.getPersistableAttributes();
-        let filter = {};
+        var attributes = this.getPersistableAttributes();
+        var filter = {};
         filter.where = {};
-        let primaryKey = this.getClass().getPrimaryKey();
+        var primaryKey = this.getClass().getPrimaryKey();
         filter.where[primaryKey] = this.getPrimaryKeyValue();
 
-        let criteria = new DbCriteria(this, filter);
+        var criteria = new DbCriteria(this, filter);
         criteria.setAttributes(attributes);
 
         return this.getConnector().update(criteria).then((result) => {
@@ -374,11 +391,11 @@ class ActiveRecord extends Model {
     return this.runHook('beforeDelete', {
       instance: this
     }).then((result) => {
-      let filter = {};
+      var filter = {};
       filter.where = {};
-      let primaryKey = this.getClass().getPrimaryKey();
+      var primaryKey = this.getClass().getPrimaryKey();
       filter.where[primaryKey] = this.getPrimaryKeyValue();
-      let criteria = new DbCriteria(this, filter);
+      var criteria = new DbCriteria(this, filter);
 
       return this.getConnector().delete(criteria).then((result) => {
         return this.runHook('afterDelete', {

@@ -27,7 +27,7 @@ describe('api/helpers', () => {
           type: 'string',
           required: true
         },
-        user_id: 'any'
+        user_id: 'number'
       });
     });
   });

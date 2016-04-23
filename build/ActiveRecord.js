@@ -10,6 +10,12 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+/**
+ * Global registry values
+ */
+var PRIMARY_KEY_TYPE = 'ActiveRecord.primaryKeyType';
+var FOREIGN_KEY_TYPE = 'ActiveRecord.foreignKeyType';
+
 var Model = require('@naujs/model'),
     _ = require('lodash'),
     util = require('@naujs/util'),
@@ -62,12 +68,13 @@ var ActiveRecord = (function (_Model) {
     // for ActiveRecord
 
     var pk = _this.getClass().getPrimaryKey();
-    ActiveRecord.defineProperty(_this, pk, 'any');
+    ActiveRecord.defineProperty(_this, pk, _this.getClass().getPrimaryKeyType());
 
     // Build foreignKeys
-    var foreignKeys = _this.getClass().getForeignKeys();
-    _.each(foreignKeys, function (key) {
-      ActiveRecord.defineProperty(_this, key, 'any');
+    _.each(_this.getRelations(), function (relation, name) {
+      if (relation.type === 'belongsTo') {
+        ActiveRecord.defineProperty(_this, relation.foreignKey, _this.getClass().getForeignKeyType(name));
+      }
     });
 
     // relations are stored differently than normal attributes
@@ -345,9 +352,16 @@ var ActiveRecord = (function (_Model) {
       return this.primaryKey || 'id';
     }
   }, {
+    key: 'getForeignKeyType',
+    value: function getForeignKeyType(name) {
+      var relation = this.getRelations()[name];
+      if (!relation) throw 'Relation ' + name + ' not found';
+      return relation.foreignKeyType || Registry.getInstance().get(FOREIGN_KEY_TYPE) || 'number';
+    }
+  }, {
     key: 'getPrimaryKeyType',
     value: function getPrimaryKeyType() {
-      return this.primaryKeyType || 'number';
+      return Registry.getInstance().get(PRIMARY_KEY_TYPE) || this.primaryKeyType || 'number';
     }
   }, {
     key: 'getForeignKeys',

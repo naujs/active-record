@@ -48,8 +48,10 @@ module.exports = {
       args[name] = options;
     });
 
-    _.each(cls.getForeignKeys(), function (name) {
-      args[name] = 'any';
+    _.each(cls.getRelations(), function (relation, name) {
+      if (relation.type === 'belongsTo') {
+        args[relation.foreignKey] = cls.getForeignKeyType(name);
+      }
     });
 
     return _.extend(args, extra);
