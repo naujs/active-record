@@ -10,19 +10,12 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-/**
- * Global registry values
- */
-var PREFIX = 'ActiveRecord';
-var PRIMARY_KEY_TYPE = PREFIX + '.primaryKeyType';
-var FOREIGN_KEY_TYPE = PREFIX + '.foreignKeyType';
-var CONNECTOR = PREFIX + '.connector';
-
 var Model = require('@naujs/model'),
     _ = require('lodash'),
     util = require('@naujs/util'),
     Registry = require('@naujs/registry'),
-    DbCriteria = require('@naujs/db-criteria');
+    DbCriteria = require('@naujs/db-criteria'),
+    constants = require('./constants');
 
 var Api = require('./Api'),
     ListApi = require('./api/ListApi'),
@@ -361,12 +354,12 @@ var ActiveRecord = (function (_Model) {
     value: function getForeignKeyType(name) {
       var relation = this.getRelations()[name];
       if (!relation) throw 'Relation ' + name + ' not found';
-      return relation.foreignKeyType || Registry.getInstance().get(FOREIGN_KEY_TYPE) || 'number';
+      return relation.foreignKeyType || Registry.getInstance().get(constants.FOREIGN_KEY_TYPE) || 'number';
     }
   }, {
     key: 'getPrimaryKeyType',
     value: function getPrimaryKeyType() {
-      return Registry.getInstance().get(PRIMARY_KEY_TYPE) || this.primaryKeyType || 'number';
+      return Registry.getInstance().get(constants.PRIMARY_KEY_TYPE) || this.primaryKeyType || 'number';
     }
   }, {
     key: 'getForeignKeys',
@@ -394,7 +387,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'getConnector',
     value: function getConnector() {
-      var connector = this.connector || Registry.getInstance().get(CONNECTOR);
+      var connector = this.connector || Registry.getInstance().get(constants.CONNECTOR);
       if (!connector) {
         throw 'Must have connector';
       }
@@ -500,17 +493,17 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'setConnector',
     value: function setConnector(connector) {
-      Registry.getInstance().set(CONNECTOR, connector);
+      Registry.getInstance().set(constants.CONNECTOR, connector);
     }
   }, {
     key: 'setPrimaryKeyType',
     value: function setPrimaryKeyType(type) {
-      Registry.getInstance().set(PRIMARY_KEY_TYPE, type);
+      Registry.getInstance().set(constants.PRIMARY_KEY_TYPE, type);
     }
   }, {
     key: 'setForeignKeyType',
     value: function setForeignKeyType(type) {
-      Registry.getInstance().set(FOREIGN_KEY_TYPE, type);
+      Registry.getInstance().set(constants.FOREIGN_KEY_TYPE, type);
     }
   }]);
 

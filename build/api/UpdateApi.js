@@ -16,7 +16,7 @@ var UpdateApi = (function (_Api) {
   function UpdateApi(cls) {
     _classCallCheck(this, UpdateApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(UpdateApi).call(this, 'update', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(UpdateApi).call(this, 'update', {
       path: helpers.generatePathWithPk(cls),
       method: 'PUT',
       args: helpers.generateArgsFromProperties(cls, helpers.generateArgsWithPk(cls))
@@ -44,6 +44,9 @@ var UpdateApi = (function (_Api) {
         }).catch(helpers.handleError);
       });
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return UpdateApi;

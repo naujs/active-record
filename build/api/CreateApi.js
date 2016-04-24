@@ -16,7 +16,7 @@ var CreateApi = (function (_Api) {
   function CreateApi(cls) {
     _classCallCheck(this, CreateApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(CreateApi).call(this, 'create', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CreateApi).call(this, 'create', {
       path: '/',
       method: 'POST',
       args: helpers.generateArgsFromProperties(cls)
@@ -32,6 +32,9 @@ var CreateApi = (function (_Api) {
         return result;
       }).catch(helpers.handleError);
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return CreateApi;

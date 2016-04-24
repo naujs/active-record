@@ -20,6 +20,8 @@ class CreateApi extends Api {
         return result;
       }).catch(helpers.handleError);
     });
+
+    this.setModelClass(cls);
   }
 }
 

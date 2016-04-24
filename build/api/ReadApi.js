@@ -16,7 +16,7 @@ var ReadApi = (function (_Api) {
   function ReadApi(cls) {
     _classCallCheck(this, ReadApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
       path: helpers.generatePathWithPk(cls),
       method: 'GET',
       args: helpers.generateArgsWithPk(cls, {
@@ -34,6 +34,9 @@ var ReadApi = (function (_Api) {
         return result;
       }).catch(helpers.handleError);
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return ReadApi;

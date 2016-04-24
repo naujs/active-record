@@ -23,6 +23,8 @@ class DeleteApi extends Api {
         return instance.delete();
       }).catch(helpers.handleError);
     });
+
+    this.setModelClass(cls);
   }
 }
 

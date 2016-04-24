@@ -15,7 +15,7 @@ var ListApi = (function (_Api) {
   function ListApi(cls) {
     _classCallCheck(this, ListApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(ListApi).call(this, 'list', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ListApi).call(this, 'list', {
       path: '/',
       method: 'GET',
       args: {
@@ -24,6 +24,9 @@ var ListApi = (function (_Api) {
     }, function (args, ctx) {
       return cls.findAll(args.filter || {}).catch(helpers.handleError);
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return ListApi;

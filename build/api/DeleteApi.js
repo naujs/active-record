@@ -16,7 +16,7 @@ var DeleteApi = (function (_Api) {
   function DeleteApi(cls) {
     _classCallCheck(this, DeleteApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(DeleteApi).call(this, 'delete', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DeleteApi).call(this, 'delete', {
       path: helpers.generatePathWithPk(cls),
       method: 'DELETE',
       args: helpers.generateArgsWithPk(cls)
@@ -35,6 +35,9 @@ var DeleteApi = (function (_Api) {
         return instance.delete();
       }).catch(helpers.handleError);
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return DeleteApi;

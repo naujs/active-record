@@ -90,6 +90,16 @@ var Api = (function () {
       return this._definition;
     }
   }, {
+    key: 'setModelClass',
+    value: function setModelClass(cls) {
+      this._modelClass = cls;
+    }
+  }, {
+    key: 'getModelClass',
+    value: function getModelClass() {
+      return this._modelClass;
+    }
+  }, {
     key: 'before',
     value: function before(fn) {
       this._beforeHooks.push(fn);
@@ -179,6 +189,7 @@ Api.buildMixin = function () {
         api.setDefinition(definition);
       } else {
         api = new Api(name, definition, handler);
+        api.setModelClass(this);
         this._api.push(api);
       }
 

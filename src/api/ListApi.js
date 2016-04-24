@@ -12,6 +12,8 @@ class ListApi extends Api {
     }, (args, ctx) => {
       return cls.findAll(args.filter || {}).catch(helpers.handleError);
     });
+
+    this.setModelClass(cls);
   }
 }
 

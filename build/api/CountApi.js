@@ -15,7 +15,7 @@ var CountApi = (function (_Api) {
   function CountApi(cls) {
     _classCallCheck(this, CountApi);
 
-    return _possibleConstructorReturn(this, Object.getPrototypeOf(CountApi).call(this, 'count', {
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CountApi).call(this, 'count', {
       path: '/count',
       method: 'GET',
       args: {
@@ -24,6 +24,9 @@ var CountApi = (function (_Api) {
     }, function (args, ctx) {
       return cls.count(args.filter || {}).catch(helpers.handleError);
     }));
+
+    _this.setModelClass(cls);
+    return _this;
   }
 
   return CountApi;

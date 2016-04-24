@@ -829,6 +829,13 @@ describe('ActiveRecord', () => {
       });
     });
 
+    it('should have modelClass', () => {
+      _.each(Store.getAllApi(), (api) => {
+        var modelClass = api.getModelClass();
+        expect(modelClass.getModelName()).toEqual('Store');
+      });
+    });
+
     it('should have default api', () => {
       var api = Store.getAllApi();
       expect(api.length).toEqual(7);

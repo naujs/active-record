@@ -70,6 +70,14 @@ class Api {
     return this._definition;
   }
 
+  setModelClass(cls) {
+    this._modelClass = cls;
+  }
+
+  getModelClass() {
+    return this._modelClass;
+  }
+
   before(fn) {
     this._beforeHooks.push(fn);
   }
@@ -141,6 +149,7 @@ Api.buildMixin = function(options = {}) {
         api.setDefinition(definition);
       } else {
         api = new Api(name, definition, handler);
+        api.setModelClass(this);
         this._api.push(api);
       }
 

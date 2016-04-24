@@ -12,6 +12,8 @@ class CountApi extends Api {
     }, (args, ctx) => {
       return cls.count(args.filter || {}).catch(helpers.handleError);
     });
+
+    this.setModelClass(cls);
   }
 }
 

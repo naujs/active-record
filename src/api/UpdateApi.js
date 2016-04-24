@@ -32,6 +32,8 @@ class UpdateApi extends Api {
         }).catch(helpers.handleError);
       });
     });
+
+    this.setModelClass(cls);
   }
 }
 
