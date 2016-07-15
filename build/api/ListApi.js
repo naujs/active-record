@@ -9,7 +9,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Api = require('../Api'),
     helpers = require('./helpers');
 
-var ListApi = (function (_Api) {
+var ListApi = function (_Api) {
   _inherits(ListApi, _Api);
 
   function ListApi(cls) {
@@ -30,6 +30,6 @@ var ListApi = (function (_Api) {
   }
 
   return ListApi;
-})(Api);
+}(Api);
 
 module.exports = ListApi;

@@ -8,30 +8,30 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var Api = require('../Api'),
     helpers = require('./helpers'),
-    Promise = require('@naujs/util').getPromise();
+    path = require('path'),
+    _ = require('lodash');
 
-var ReadApi = function (_Api) {
-  _inherits(ReadApi, _Api);
+var CreateRelationApi = function (_Api) {
+  _inherits(CreateRelationApi, _Api);
 
-  function ReadApi(cls) {
-    _classCallCheck(this, ReadApi);
+  function CreateRelationApi(cls, relationName) {
+    _classCallCheck(this, CreateRelationApi);
 
-    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ReadApi).call(this, 'read', {
-      path: helpers.generatePathWithPk(cls),
-      method: 'GET',
-      args: helpers.generateArgsWithPk(cls, {
-        filter: 'object'
-      })
+    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CreateRelationApi).call(this, 'create__' + relationName, {
+      path: helpers.generatePathWithPk(cls, relationName),
+      method: 'POST',
+      args: helpers.generateArgsFromProperties(cls.getRelations()[relationName].model)
     }, function (args, ctx) {
       var primaryKey = cls.getPrimaryKey();
-      return cls.findByPk(args[primaryKey], args.filter).then(function (result) {
+      return cls.findByPk(args[primaryKey]).then(function (result) {
         if (!result) {
           var error = new Error(cls.getModelName() + ' not found');
           error.statusCode = error.code = 404;
           return Promise.reject(error);
         }
-
-        return result;
+        args = _.clone(args);
+        delete args[primaryKey];
+        return result[relationName].create(args);
       }).catch(helpers.handleError);
     }));
 
@@ -39,7 +39,7 @@ var ReadApi = function (_Api) {
     return _this;
   }
 
-  return ReadApi;
+  return CreateRelationApi;
 }(Api);
 
-module.exports = ReadApi;
+module.exports = CreateRelationApi;

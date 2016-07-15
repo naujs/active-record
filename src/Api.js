@@ -1,126 +1,9 @@
 var util = require('@naujs/util')
   , _ = require('lodash')
-  , Promise = util.getPromise();
+  , Promise = util.getPromise()
+  , Route = require('@naujs/route');
 
-class Api {
-  constructor(name, definition, handler) {
-    this._name = name;
-    this._definition = definition;
-    this.setHandler(handler);
-
-    this._beforeHooks = [];
-    this._afterHooks = [];
-    this.enable();
-  }
-
-  getPath() {
-    return this._definition.path;
-  }
-
-  getArgs() {
-    if (!this._args) {
-      var args = {};
-      _.each(this._definition.args, (options, name) => {
-        if (_.isString(options)) {
-          args[name] = {};
-          args[name].type = options;
-        } else if (_.isObject(options)) {
-          args[name] = options;
-        }
-      });
-      this._args = args;
-    }
-    return this._args;
-  }
-
-  getMethod() {
-    return this._definition.method || this._definition.type || 'get';
-  }
-
-  isEnabled() {
-    return this._enabled;
-  }
-
-  disable() {
-    this._enabled = false;
-  }
-
-  enable() {
-    this._enabled = true;
-  }
-
-  getName() {
-    return this._name;
-  }
-
-  setHandler(fn) {
-    this._handler = fn;
-  }
-
-  getHandler() {
-    return this._handler;
-  }
-
-  setDefinition(definition) {
-    this._definition = definition;
-    delete this._args;
-  }
-
-  getDefinition() {
-    return this._definition;
-  }
-
-  setModelClass(cls) {
-    this._modelClass = cls;
-  }
-
-  getModelClass() {
-    return this._modelClass;
-  }
-
-  before(fn) {
-    this._beforeHooks.push(fn);
-  }
-
-  after(fn) {
-    this._afterHooks.push(fn);
-  }
-
-  _runHooks(hooks, ...args) {
-    var fn = hooks.shift();
-    if (!fn) {
-      return Promise.resolve(null);
-    }
-
-    return util.tryPromise(fn(...args)).then(() => {
-      return this._runHooks(hooks, ...args);
-    }).then(() => {
-      return this;
-    });
-  }
-
-  execute(args, ctx) {
-    if (!this._enabled) {
-      let error = new Error(`API ${this.getName()} is disabled`);
-      error.httpCode = error.code = 400;
-      return Promise.reject(error);
-    }
-
-    if (!this._handler || !_.isFunction(this._handler)) {
-      let error = new Error(`API ${this.getName()} does not have a valid handler`);
-      error.httpCode = error.code = 500;
-      return Promise.reject(error);
-    }
-
-    return this._runHooks(this._beforeHooks, args, ctx).then(() => {
-      return this._handler(args, ctx);
-    }).then((result) => {
-      return this._runHooks(this._afterHooks, result, args, ctx).then(() => {
-        return result;
-      });
-    });
-  }
-}
+class Api extends Route {}
 
 /**
  * Build a mixin to allow any object to act as API
@@ -142,10 +25,10 @@ Api.buildMixin = function(options = {}) {
         handler = nameOrApi.getHandler();
       }
 
-      var api = this.getApi(name);
+      var api = this.getApiOrUseDefault(name);
 
       if (api) {
-        api.setHandler(handler.bind(this));
+        if (handler) api.setHandler(handler.bind(this));
         api.setDefinition(definition);
       } else {
         api = new Api(name, definition, handler);

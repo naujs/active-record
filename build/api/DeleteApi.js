@@ -10,7 +10,7 @@ var Api = require('../Api'),
     helpers = require('./helpers'),
     Promise = require('@naujs/util').getPromise();
 
-var DeleteApi = (function (_Api) {
+var DeleteApi = function (_Api) {
   _inherits(DeleteApi, _Api);
 
   function DeleteApi(cls) {
@@ -41,6 +41,6 @@ var DeleteApi = (function (_Api) {
   }
 
   return DeleteApi;
-})(Api);
+}(Api);
 
 module.exports = DeleteApi;

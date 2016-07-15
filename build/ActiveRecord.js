@@ -1,6 +1,6 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -15,7 +15,8 @@ var Model = require('@naujs/model'),
     util = require('@naujs/util'),
     Registry = require('@naujs/registry'),
     DbCriteria = require('@naujs/db-criteria'),
-    constants = require('./constants');
+    constants = require('./constants'),
+    AccessControl = require('@naujs/access-control');
 
 var Api = require('./Api'),
     ListApi = require('./api/ListApi'),
@@ -23,7 +24,8 @@ var Api = require('./Api'),
     CreateApi = require('./api/CreateApi'),
     UpdateApi = require('./api/UpdateApi'),
     DeleteApi = require('./api/DeleteApi'),
-    CountApi = require('./api/CountApi');
+    CountApi = require('./api/CountApi'),
+    FindRelationApi = require('./api/FindRelationApi');
 
 var relationFunctions = {};
 _.each(['belongsTo', 'hasOne', 'hasMany', 'hasManyAndBelongsTo'], function (name) {
@@ -31,24 +33,9 @@ _.each(['belongsTo', 'hasOne', 'hasMany', 'hasManyAndBelongsTo'], function (name
   relationFunctions[name] = require('./relations/' + capitalized);
 });
 
-// Helper methods
-// Class-level
-function defaultArgsForId(cls) {
-  var args = {};
-  args[cls.getPrimaryKey()] = {
-    'type': cls.getPrimaryKeyType(),
-    'required': true
-  };
-  return args;
-}
-
-function defaultPathForId(cls) {
-  return '/:' + cls.getPrimaryKey();
-}
-
 // TODO: remove options from all methods if not used
 
-var ActiveRecord = (function (_Model) {
+var ActiveRecord = function (_Model) {
   _inherits(ActiveRecord, _Model);
 
   function ActiveRecord() {
@@ -61,6 +48,7 @@ var ActiveRecord = (function (_Model) {
     var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ActiveRecord).call(this));
     // do not pass attributes to super because we need to build other properties
     // for ActiveRecord
+
 
     var pk = _this.getClass().getPrimaryKey();
     ActiveRecord.defineProperty(_this, pk, _this.getClass().getPrimaryKeyType());
@@ -144,7 +132,7 @@ var ActiveRecord = (function (_Model) {
       var relations = this.getClass().getRelations();
       _.each(relations, function (relation, name) {
         var RelationFunction = relationFunctions[relation.type];
-        _this3[name] = new RelationFunction(_this3, relation, attributes[name]).asFunction();
+        _this3[name] = new RelationFunction(_this3, name, attributes[name]).asFunction();
       });
       return this;
     }
@@ -224,8 +212,7 @@ var ActiveRecord = (function (_Model) {
           var attributes = _this6.getPersistableAttributes();
           var criteria = new DbCriteria(_this6, {});
 
-          criteria.setAttributes(attributes);
-          return _this6.getConnector().create(criteria).then(function (result) {
+          return _this6.getConnector().create(criteria, attributes).then(function (result) {
             _this6.setAttributes(result);
 
             return _this6.runHook('afterCreate', {
@@ -265,9 +252,8 @@ var ActiveRecord = (function (_Model) {
           filter.where[primaryKey] = _this7.getPrimaryKeyValue();
 
           var criteria = new DbCriteria(_this7, filter);
-          criteria.setAttributes(attributes);
 
-          return _this7.getConnector().update(criteria).then(function (result) {
+          return _this7.getConnector().update(criteria, attributes).then(function (result) {
             _this7.setAttributes(result);
 
             return _this7.runHook('afterUpdate', {
@@ -488,7 +474,7 @@ var ActiveRecord = (function (_Model) {
   }, {
     key: 'getRelations',
     value: function getRelations() {
-      return _.clone(this.relations) || {};
+      return _.result(this, 'relations') || {};
     }
   }, {
     key: 'setConnector',
@@ -508,17 +494,26 @@ var ActiveRecord = (function (_Model) {
   }]);
 
   return ActiveRecord;
-})(Model);
+}(Model);
 
 ActiveRecord.Api = Api;
 
 ActiveRecord.mixin({}, Api.buildMixin({
   defaultApi: function defaultApi() {
-    return [new CountApi(this), new ListApi(this), new ReadApi(this), new CreateApi(this), new UpdateApi(this), new DeleteApi(this)];
+    var _this12 = this;
+
+    var relations = this.getRelations();
+    var relationApis = _.chain(relations).map(function (opts, name) {
+      return [new FindRelationApi(_this12, name)];
+    }).flatten().value();
+
+    return [new CountApi(this), new ListApi(this), new ReadApi(this), new CreateApi(this), new UpdateApi(this), new DeleteApi(this)].concat(relationApis);
   },
   apiName: function apiName() {
     return this.getPluralName();
   }
 }));
+
+ActiveRecord.mixin({}, AccessControl.buildMixin());
 
 module.exports = ActiveRecord;

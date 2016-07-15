@@ -3,8 +3,8 @@
 var HasMany = require('../../../build/relations/HasMany')
   , Promise = require('@naujs/util').getPromise();
 
-function relationFunction(instance, relation, value) {
-  return new HasMany(instance, relation, value).asFunction();
+function relationFunction(instance, relationName, value) {
+  return new HasMany(instance, relationName, value).asFunction();
 }
 
 describe('HasMany', () => {
@@ -27,7 +27,7 @@ describe('HasMany', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['products'], [
+    var relation = relationFunction(instance, 'products', [
       {
         name: 'Product 1',
         id: 1,
@@ -51,7 +51,7 @@ describe('HasMany', () => {
       return Promise.resolve([]);
     });
 
-    var relation = relationFunction(instance, Store.getRelations()['products']);
+    var relation = relationFunction(instance, 'products');
     return relation({
       limit: 10,
       where: {
@@ -76,7 +76,7 @@ describe('HasMany', () => {
         return Promise.resolve({});
       });
 
-      var relation = relationFunction(instance, Store.getRelations()['products']);
+      var relation = relationFunction(instance, 'products');
       return relation.delete({
         where: {
           name: 'Product 1'

@@ -5,7 +5,6 @@ var path = require('path')
 module.exports = {
   generatePathWithPk: function(cls, ...args) {
     var pk = cls.getPrimaryKey();
-
     return path.join.apply(path, [`/:${pk}`].concat(args));
   },
 

@@ -1,6 +1,6 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -8,12 +8,11 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var Registry = require('@naujs/registry'),
-    DbCriteria = require('@naujs/db-criteria'),
+var DbCriteria = require('@naujs/db-criteria'),
     _ = require('lodash'),
     Relation = require('./Relation');
 
-var HasMany = (function (_Relation) {
+var HasMany = function (_Relation) {
   _inherits(HasMany, _Relation);
 
   function HasMany() {
@@ -37,6 +36,24 @@ var HasMany = (function (_Relation) {
       return where;
     }
   }, {
+    key: 'create',
+    value: function create() {
+      var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var instance = this.getModelInstance();
+      var relation = this.getRelation();
+      var TargetModel = this.getTargetModelClass();
+      var referenceKey = relation.referenceKey || instance.getClass().getPrimaryKey();
+      var foreignKey = relation.foreignKey;
+
+      var extraAtrs = {};
+      extraAtrs[foreignKey] = instance[referenceKey];
+
+      var targetModel = new TargetModel(_.extend({}, attributes, extraAtrs));
+
+      return targetModel.save();
+    }
+  }, {
     key: 'find',
     value: function find() {
       var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
@@ -55,6 +72,6 @@ var HasMany = (function (_Relation) {
   }]);
 
   return HasMany;
-})(Relation);
+}(Relation);
 
 module.exports = HasMany;

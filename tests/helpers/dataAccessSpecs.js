@@ -38,9 +38,8 @@ global.testDataAccessMethods = function() {
       return Store.findAll({
         include: 'products'
       }).then((stores) => {
-        expect(stores.length).toEqual(3);
         var store = stores[0];
-
+        expect(stores.length).toEqual(3);
         expect(store.toJSON()).toEqual({
           name: 'Store 1',
           id: 1,

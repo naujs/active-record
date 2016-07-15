@@ -10,7 +10,7 @@ var Api = require('../Api'),
     helpers = require('./helpers'),
     Promise = require('@naujs/util').getPromise();
 
-var UpdateApi = (function (_Api) {
+var UpdateApi = function (_Api) {
   _inherits(UpdateApi, _Api);
 
   function UpdateApi(cls) {
@@ -50,6 +50,6 @@ var UpdateApi = (function (_Api) {
   }
 
   return UpdateApi;
-})(Api);
+}(Api);
 
 module.exports = UpdateApi;

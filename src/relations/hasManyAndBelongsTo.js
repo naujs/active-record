@@ -1,14 +1,13 @@
 'use strict';
 
-var Registry = require('@naujs/registry')
-  , DbCriteria = require('@naujs/db-criteria')
+var DbCriteria = require('@naujs/db-criteria')
   , _ = require('lodash')
   , HasMany = require('./HasMany');
 
 class HasManyAndBelongsTo extends HasMany {
   getThroughModelClass() {
     if (!this.ThroughModel) {
-      this.ThroughModel = Registry.getModel(this.getRelation().through);
+      this.ThroughModel = this.getRelation().through;
     }
     return this.ThroughModel;
   }
@@ -28,14 +27,14 @@ class HasManyAndBelongsTo extends HasMany {
   }
 
   find(filter = {}) {
-    let TargetModel = this.getTargetModelClass();
+    var TargetModel = this.getTargetModelClass();
     filter.where = filter.where || {};
 
-    let criteria = new DbCriteria(this.getThroughModelClass(), {});
-    let where = this._generateWhereCondition(where);
+    var criteria = new DbCriteria(this.getThroughModelClass(), {});
+    var where = this._generateWhereCondition(where);
     criteria.where(where);
 
-    let targetRelation = this._getTargetRelation();
+    var targetRelation = this._getTargetRelation();
     filter.where[targetRelation.referenceKey || TargetModel.getPrimaryKey()] = {
       in: criteria
     };
@@ -44,13 +43,13 @@ class HasManyAndBelongsTo extends HasMany {
   }
 
   delete(filter = {}) {
-    let TargetModel = this.getTargetModelClass();
+    var TargetModel = this.getTargetModelClass();
 
-    let criteria = new DbCriteria(TargetModel, filter);
-    let targetRelation = this._getTargetRelation();
+    var criteria = new DbCriteria(TargetModel, filter);
+    var targetRelation = this._getTargetRelation();
     criteria.fields(targetRelation.referenceKey || TargetModel.getPrimaryKey());
 
-    let mainWhere = {};
+    var mainWhere = {};
     mainWhere[targetRelation.foreignKey] = {
       in: criteria
     };

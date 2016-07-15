@@ -3,7 +3,8 @@ var Model = require('@naujs/model')
   , util = require('@naujs/util')
   , Registry = require('@naujs/registry')
   , DbCriteria = require('@naujs/db-criteria')
-  , constants = require('./constants');
+  , constants = require('./constants')
+  , AccessControl = require('@naujs/access-control');
 
 var Api = require('./Api')
   , ListApi = require('./api/ListApi')
@@ -11,7 +12,8 @@ var Api = require('./Api')
   , CreateApi = require('./api/CreateApi')
   , UpdateApi = require('./api/UpdateApi')
   , DeleteApi = require('./api/DeleteApi')
-  , CountApi = require('./api/CountApi');
+  , CountApi = require('./api/CountApi')
+  , FindRelationApi = require('./api/FindRelationApi');
 
 var relationFunctions = {};
 _.each([
@@ -23,21 +25,6 @@ _.each([
   var capitalized = name.charAt(0).toUpperCase() + name.substr(1);
   relationFunctions[name] = require(`./relations/${capitalized}`);
 });
-
-// Helper methods
-// Class-level
-function defaultArgsForId(cls) {
-  var args = {};
-  args[cls.getPrimaryKey()] = {
-    'type': cls.getPrimaryKeyType(),
-    'required': true
-  };
-  return args;
-}
-
-function defaultPathForId(cls) {
-  return '/:' + cls.getPrimaryKey();
-}
 
 // TODO: remove options from all methods if not used
 class ActiveRecord extends Model {
@@ -130,7 +117,7 @@ class ActiveRecord extends Model {
     var relations = this.getClass().getRelations();
     _.each(relations, (relation, name) => {
       var RelationFunction = relationFunctions[relation.type];
-      this[name] = new RelationFunction(this, relation, attributes[name]).asFunction();
+      this[name] = new RelationFunction(this, name, attributes[name]).asFunction();
     });
     return this;
   }
@@ -301,8 +288,7 @@ class ActiveRecord extends Model {
         var attributes = this.getPersistableAttributes();
         var criteria = new DbCriteria(this, {});
 
-        criteria.setAttributes(attributes);
-        return this.getConnector().create(criteria).then((result) => {
+        return this.getConnector().create(criteria, attributes).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterCreate', {
@@ -339,9 +325,8 @@ class ActiveRecord extends Model {
         filter.where[primaryKey] = this.getPrimaryKeyValue();
 
         var criteria = new DbCriteria(this, filter);
-        criteria.setAttributes(attributes);
 
-        return this.getConnector().update(criteria).then((result) => {
+        return this.getConnector().update(criteria, attributes).then((result) => {
           this.setAttributes(result);
 
           return this.runHook('afterUpdate', {
@@ -404,7 +389,7 @@ class ActiveRecord extends Model {
 
   // Relations
   static getRelations() {
-    return _.clone(this.relations) || {};
+    return _.result(this, 'relations') || {};
   }
 
   getRelations() {
@@ -429,6 +414,13 @@ ActiveRecord.Api = Api;
 
 ActiveRecord.mixin({}, Api.buildMixin({
   defaultApi: function() {
+    var relations = this.getRelations();
+    var relationApis = _.chain(relations).map((opts, name) => {
+      return [
+        new FindRelationApi(this, name)
+      ];
+    }).flatten().value();
+
     return [
       new CountApi(this),
       new ListApi(this),
@@ -436,11 +428,13 @@ ActiveRecord.mixin({}, Api.buildMixin({
       new CreateApi(this),
       new UpdateApi(this),
       new DeleteApi(this)
-    ];
+    ].concat(relationApis);
   },
   apiName: function() {
     return this.getPluralName();
   }
 }));
+
+ActiveRecord.mixin({}, AccessControl.buildMixin());
 
 module.exports = ActiveRecord;

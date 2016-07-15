@@ -5,91 +5,76 @@ var Api = require('../../build/Api')
   , Promise = require('@naujs/util').getPromise();
 
 describe('Api', () => {
-  describe('#execute', () => {
-    var args, ctx, handler;
-    var api;
+  describe('.buildMixin', () => {
+    var mixin;
+    describe('#api', () => {
+      beforeEach(() => {
+        mixin = Api.buildMixin();
+      });
 
-    beforeEach(() => {
-      args = {
-        name: 1
-      };
+      it('should define API', () => {
+        mixin.api('test', {
+          args: {
+            name: 'string'
+          }
+        });
 
-      ctx = {
-        test: 2
-      };
+        var api = mixin._api;
+        expect(api.length).toEqual(1);
+        expect(api[0].getArgs()).toEqual({
+          name: {
+            type: 'string'
+          }
+        });
+      });
 
-      handler = jasmine.createSpy('handler');
-      api = new Api('test', {}, handler);
-    });
+      it('should allow overwrite API', () => {
+        mixin.api('test', {
+          args: {
+            name: 'string'
+          }
+        });
 
-    it('should pass args and ctx to the handler', () => {
-      return api.execute(args, ctx).then(() => {
-        expect(handler).toHaveBeenCalledWith(args, ctx);
+        mixin.api('test', {
+          args: {
+            name: 'string',
+            age: 'number'
+          }
+        });
+
+        var api = mixin._api;
+        expect(api.length).toEqual(1);
+        expect(api[0].getArgs()).toEqual({
+          name: {
+            type: 'string'
+          },
+          age: {
+            type: 'number'
+          }
+        });
       });
     });
 
-    it('should pass args and ctx to before hooks', () => {
-      var before = jasmine.createSpy('before');
-      api.before(before);
-
-      return api.execute(args, ctx).then(() => {
-        expect(before).toHaveBeenCalledWith(args, ctx);
-      });
-    });
-
-    it('should pass result, args and ctx to after hooks', () => {
-      var after = jasmine.createSpy('after');
-      handler.and.returnValue(100);
-      api.after(after);
-
-      return api.execute(args, ctx).then(() => {
-        expect(after).toHaveBeenCalledWith(100, args, ctx);
-      });
-    });
-
-    it('should stop when having a rejection', () => {
-      api.before(() => {
-        return Promise.reject('Error');
+    describe('Default API', () => {
+      beforeEach(() => {
+        mixin = Api.buildMixin({
+          defaultApi: function() {
+            return new Api('test', {
+              args: {
+                name: 'string'
+              }
+            });
+          }
+        });
       });
 
-      return api.execute(args, ctx).then(() => {
-        fail('Should reject');
-      }).catch((error) => {
-        expect(error).toEqual('Error');
-      });
-    });
-
-    it('should run hooks in correct order', () => {
-      var check = [];
-
-      api.before(() => {
-        check.push(0);
-      });
-
-      api.before(() => {
-        check.push(1);
-      });
-
-      api.before(() => {
-        check.push(2);
-      });
-
-      api.after(() => {
-        check.push(3);
-      });
-
-      api.after(() => {
-        check.push(4);
-      });
-
-      return api.execute(args, ctx).then(() => {
-        expect(check).toEqual([
-          0,
-          1,
-          2,
-          3,
-          4
-        ]);
+      it('should setup default api', () => {
+        var api = mixin.getApiOrUseDefault('test');
+        expect(api.getArgs()).toEqual({
+          name: {
+            type: 'string'
+          }
+        });
       });
     });
   });

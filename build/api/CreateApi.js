@@ -10,7 +10,7 @@ var Api = require('../Api'),
     helpers = require('./helpers'),
     Promise = require('@naujs/util').getPromise();
 
-var CreateApi = (function (_Api) {
+var CreateApi = function (_Api) {
   _inherits(CreateApi, _Api);
 
   function CreateApi(cls) {
@@ -38,6 +38,6 @@ var CreateApi = (function (_Api) {
   }
 
   return CreateApi;
-})(Api);
+}(Api);
 
 module.exports = CreateApi;

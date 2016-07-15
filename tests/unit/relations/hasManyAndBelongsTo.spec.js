@@ -3,8 +3,8 @@
 var HasManyAndBelongsTo = require('../../../build/relations/HasManyAndBelongsTo')
   , Promise = require('@naujs/util').getPromise();
 
-function relationFunction(instance, relation, value) {
-  return new HasManyAndBelongsTo(instance, relation, value).asFunction();
+function relationFunction(instance, relationName, value) {
+  return new HasManyAndBelongsTo(instance, relationName, value).asFunction();
 }
 
 describe('HasManyAndBelongsTo', () => {
@@ -27,7 +27,7 @@ describe('HasManyAndBelongsTo', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['tags'], [
+    var relation = relationFunction(instance, 'tags', [
       {
         name: 'Tag1',
         id: 1
@@ -48,7 +48,7 @@ describe('HasManyAndBelongsTo', () => {
       return Promise.resolve([]);
     });
 
-    var relation = relationFunction(instance, Store.getRelations()['tags']);
+    var relation = relationFunction(instance, 'tags');
     return relation({
       limit: 10,
       where: {
@@ -79,7 +79,7 @@ describe('HasManyAndBelongsTo', () => {
         return Promise.resolve({});
       });
 
-      var relation = relationFunction(instance, Store.getRelations()['tags']);
+      var relation = relationFunction(instance, 'tags');
       return relation.delete({
         where: {
           name: 'Tag1'

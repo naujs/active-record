@@ -1,5 +1,4 @@
-var Registry = require('@naujs/registry')
-  , DbCriteria = require('@naujs/db-criteria')
+var DbCriteria = require('@naujs/db-criteria')
   , _ = require('lodash')
   , HasMany = require('./HasMany');
 

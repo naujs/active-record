@@ -1,6 +1,6 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -13,7 +13,7 @@ var Registry = require('@naujs/registry'),
     Relation = require('./Relation'),
     _ = require('lodash');
 
-var BelongsTo = (function (_Relation) {
+var BelongsTo = function (_Relation) {
   _inherits(BelongsTo, _Relation);
 
   function BelongsTo() {
@@ -32,11 +32,36 @@ var BelongsTo = (function (_Relation) {
       return where;
     }
   }, {
+    key: 'create',
+    value: function create() {
+      var attributes = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var instance = this.getModelInstance();
+      var relation = this.getRelation();
+      var referenceKey = relation.referenceKey || this.getTargetModelClass().getPrimaryKey();
+
+      var foreignKey = relation.foreignKey;
+
+      var TargetModel = this.getTargetModelClass();
+      var targetModel = new TargetModel(attributes);
+
+      return targetModel.save().then(function (target) {
+        instance[foreignKey] = target[referenceKey];
+        return instance.save().then(function () {
+          return target;
+        });
+      });
+    }
+  }, {
     key: 'find',
     value: function find() {
-      return this.getTargetModelClass().findOne({
-        where: this._generateWhereCondition()
-      });
+      var filter = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+      var _filter = {};
+      _filter.where = this._generateWhereCondition();
+      if (filter.include) _filter.include = filter.include;
+
+      return this.getTargetModelClass().findOne(_filter);
     }
   }, {
     key: 'delete',
@@ -48,6 +73,6 @@ var BelongsTo = (function (_Relation) {
   }]);
 
   return BelongsTo;
-})(Relation);
+}(Relation);
 
 module.exports = BelongsTo;

@@ -3,8 +3,8 @@ var _ = require('lodash')
   , Registry = require('@naujs/registry');
 
 class Relation {
-  constructor(instance, relation, value) {
-    this._relation = relation;
+  constructor(instance, relationName, value) {
+    this._relation = instance.getRelations()[relationName];
     this._instance = instance;
     this.setValue(value);
   }
@@ -18,11 +18,7 @@ class Relation {
   }
 
   getTargetModelClass() {
-    if (!this.TargetModelClass) {
-      this.TargetModelClass = Registry.getModel(this.getRelation().model);
-    }
-
-    return this.TargetModelClass;
+    return this.getRelation().model;
   }
 
   _createInstanceFromTargetModel(value) {

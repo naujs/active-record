@@ -1,17 +1,17 @@
 'use strict';
 
-var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var _ = require('lodash'),
     Registry = require('@naujs/registry');
 
-var Relation = (function () {
-  function Relation(instance, relation, value) {
+var Relation = function () {
+  function Relation(instance, relationName, value) {
     _classCallCheck(this, Relation);
 
-    this._relation = relation;
+    this._relation = instance.getRelations()[relationName];
     this._instance = instance;
     this.setValue(value);
   }
@@ -29,11 +29,7 @@ var Relation = (function () {
   }, {
     key: 'getTargetModelClass',
     value: function getTargetModelClass() {
-      if (!this.TargetModelClass) {
-        this.TargetModelClass = Registry.getModel(this.getRelation().model);
-      }
-
-      return this.TargetModelClass;
+      return this.getRelation().model;
     }
   }, {
     key: '_createInstanceFromTargetModel',
@@ -122,6 +118,6 @@ var Relation = (function () {
   }]);
 
   return Relation;
-})();
+}();
 
 module.exports = Relation;

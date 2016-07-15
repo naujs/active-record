@@ -7,18 +7,39 @@ var Registry = require('@naujs/registry')
 
 class BelongsTo extends Relation {
   _generateWhereCondition() {
-    let relation = this.getRelation();
-    let where = {};
-    let referenceKey = relation.referenceKey
+    var relation = this.getRelation();
+    var where = {};
+    var referenceKey = relation.referenceKey
       || this.getTargetModelClass().getPrimaryKey();
     where[referenceKey] = this.getModelInstance()[relation.foreignKey];
     return where;
   }
 
-  find() {
-    return this.getTargetModelClass().findOne({
-      where: this._generateWhereCondition()
+  create(attributes = {}) {
+    var instance = this.getModelInstance();
+    var relation = this.getRelation();
+    var referenceKey = relation.referenceKey
+      || this.getTargetModelClass().getPrimaryKey();
+
+    var foreignKey = relation.foreignKey;
+
+    var TargetModel = this.getTargetModelClass();
+    var targetModel = new TargetModel(attributes);
+
+    return targetModel.save().then((target) => {
+      instance[foreignKey] = target[referenceKey];
+      return instance.save().then(() => {
+        return target;
+      });
     });
+  }
+
+  find(filter = {}) {
+    var _filter = {};
+    _filter.where = this._generateWhereCondition();
+    if (filter.include) _filter.include = filter.include;
+
+    return this.getTargetModelClass().findOne(_filter);
   }
 
   delete() {

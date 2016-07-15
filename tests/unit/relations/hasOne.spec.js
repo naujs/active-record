@@ -3,8 +3,8 @@
 var HasOne = require('../../../build/relations/HasOne')
   , Promise = require('@naujs/util').getPromise();
 
-function relationFunction(instance, relation, value) {
-  return new HasOne(instance, relation, value).asFunction();
+function relationFunction(instance, relationName, value) {
+  return new HasOne(instance, relationName, value).asFunction();
 }
 
 describe('HasOne', () => {
@@ -27,7 +27,7 @@ describe('HasOne', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['alias'], {
+    var relation = relationFunction(instance, 'alias', {
       name: 'store-1',
       id: 1,
       store_id: 1
@@ -40,7 +40,7 @@ describe('HasOne', () => {
       return Promise.resolve([]);
     });
 
-    var relation = relationFunction(instance, Store.getRelations()['alias']);
+    var relation = relationFunction(instance, 'alias');
     return relation({
       where: {
         name: 'store-1'
@@ -62,7 +62,7 @@ describe('HasOne', () => {
         return Promise.resolve({});
       });
 
-      var relation = relationFunction(instance, Store.getRelations()['alias']);
+      var relation = relationFunction(instance, 'alias');
       return relation.delete({
         where: {
           name: 'store-1'

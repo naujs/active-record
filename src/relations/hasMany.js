@@ -1,19 +1,33 @@
 'use strict';
 
-var Registry = require('@naujs/registry')
-  , DbCriteria = require('@naujs/db-criteria')
+var DbCriteria = require('@naujs/db-criteria')
   , _ = require('lodash')
   , Relation = require('./Relation');
 
 class HasMany extends Relation {
   _getReferenceKeyValue() {
-    let instance = this.getModelInstance();
+    var instance = this.getModelInstance();
     return instance[this.getRelation().referenceKey] || instance.getPrimaryKeyValue();
   }
 
   _generateWhereCondition(where = {}) {
     where[this.getRelation().foreignKey] = this._getReferenceKeyValue();
     return where;
+  }
+
+  create(attributes = {}) {
+    var instance = this.getModelInstance();
+    var relation = this.getRelation();
+    var TargetModel = this.getTargetModelClass();
+    var referenceKey = relation.referenceKey || instance.getClass().getPrimaryKey();
+    var foreignKey = relation.foreignKey;
+
+    var extraAtrs = {};
+    extraAtrs[foreignKey] = instance[referenceKey];
+
+    var targetModel = new TargetModel(_.extend({}, attributes, extraAtrs));
+
+    return targetModel.save();
   }
 
   find(filter = {}) {

@@ -3,12 +3,12 @@
 var BelongsTo = require('../../../build/relations/BelongsTo')
   , Promise = require('@naujs/util').getPromise();
 
-function relationFunction(instance, relation, value) {
-  return new BelongsTo(instance, relation, value).asFunction();
+function relationFunction(instance, relationName, value) {
+  return new BelongsTo(instance, relationName, value).asFunction();
 }
 
 describe('BelongsTo', () => {
-  var instance, connector;
+  var instance, connector, relation;
 
   beforeEach(() => {
     spyOn(User, 'findOne');
@@ -18,6 +18,8 @@ describe('BelongsTo', () => {
       name: 'Store 1',
       user_id: 1
     });
+
+    relation = relationFunction(instance, 'owner');
   });
 
   afterEach(() => {
@@ -25,7 +27,7 @@ describe('BelongsTo', () => {
   });
 
   it('should return values if provide', () => {
-    var relation = relationFunction(instance, Store.getRelations()['owner'], {});
+    relation = relationFunction(instance, 'owner', {});
     expect(relation() instanceof User).toBe(true);
   });
 
@@ -34,8 +36,6 @@ describe('BelongsTo', () => {
       return Promise.resolve({});
     });
 
-    var relation = relationFunction(instance, Store.getRelations()['owner']);
-
     return relation().then((owner) => {
       expect(User.findOne.calls.count()).toBe(1);
       var filter = User.findOne.calls.argsFor(0)[0];
@@ -43,6 +43,46 @@ describe('BelongsTo', () => {
         where: {
           id: 1
         }
+      });
+    });
+  });
+
+  describe('#create', () => {
+    beforeEach(() => {
+      spyOn(User.prototype, 'save').and.callFake(() => {
+        return Promise.resolve(new User({
+          id: 2,
+          name: 'User 2'
+        }));
+      });
+
+      spyOn(Store.prototype, 'save').and.callFake(() => {
+        return Promise.resolve({});
+      });
+
+      return relation.create({
+        name: 'User 2'
+      });
+    });
+
+    afterEach(() => {
+      User.prototype.save.and.callThrough();
+      Store.prototype.save.and.callThrough();
+    });
+
+    it('should call #save on the related model', () => {
+      expect(User.prototype.save.calls.count()).toEqual(1);
+      expect(User.prototype.save.calls.first().object.getAttributes()).toEqual({
+        name: 'User 2'
+      });
+    });
+
+    it('should set foreignKey afterward', () => {
+      expect(Store.prototype.save.calls.count()).toEqual(1);
+      expect(Store.prototype.save.calls.first().object.getAttributes()).toEqual({
+        id: 1,
+        name: 'Store 1',
+        user_id: 2
       });
     });
   });
@@ -61,7 +101,6 @@ describe('BelongsTo', () => {
         return Promise.resolve({});
       });
 
-      var relation = relationFunction(instance, Store.getRelations()['owner']);
       return relation.delete({
         where: {
           name: 'User 2'

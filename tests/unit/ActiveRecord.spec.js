@@ -289,12 +289,10 @@ describe('ActiveRecord', () => {
 
       var expectedCriteria = new DbCriteria(instance, {});
 
-      expectedCriteria.setAttributes({
-        name: 'Store 1'
-      });
-
       return instance.create().then(() => {
-        expect(connector.create).toHaveBeenCalledWith(expectedCriteria);
+        expect(connector.create).toHaveBeenCalledWith(expectedCriteria, {
+          name: 'Store 1'
+        });
       });
     });
 
@@ -420,13 +418,11 @@ describe('ActiveRecord', () => {
 
       var expectedCriteria = new DbCriteria(instance, {where: {id: 1}});
 
-      expectedCriteria.setAttributes({
-        id: 1,
-        name: 'Store 1'
-      });
-
       return instance.update().then(() => {
-        expect(connector.update).toHaveBeenCalledWith(expectedCriteria);
+        expect(connector.update).toHaveBeenCalledWith(expectedCriteria, {
+          id: 1,
+          name: 'Store 1'
+        });
       });
     });
 
